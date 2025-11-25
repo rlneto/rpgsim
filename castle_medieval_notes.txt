@@ -1,0 +1,21 @@
+🏰 Medieval Theme - Castle Medieval Notes
+==================================================
+
+Tempo: 90 BPM
+Key: C Major
+Notes: 13
+
+Musical Score:
+ 1.   C5   - Duration:  1.0 beats - Velocity: 100
+ 2.   E5   - Duration:  1.0 beats - Velocity:  90
+ 3.   G5   - Duration:  2.0 beats - Velocity: 110
+ 4.   A4   - Duration:  1.0 beats - Velocity:  80
+ 5.   C5   - Duration:  1.0 beats - Velocity:  85
+ 6.   F4   - Duration:  1.0 beats - Velocity:  75
+ 7.   E4   - Duration:  1.0 beats - Velocity:  80
+ 8.   D5   - Duration:  1.5 beats - Velocity:  95
+ 9.   G5   - Duration:  0.5 beats - Velocity: 100
+10.   F5   - Duration:  2.0 beats - Velocity:  85
+11.   C5   - Duration:  1.0 beats - Velocity:  90
+12.   G4   - Duration:  1.0 beats - Velocity:  85
+13.   C5   - Duration:  3.0 beats - Velocity: 100

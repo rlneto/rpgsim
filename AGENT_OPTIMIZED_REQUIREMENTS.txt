@@ -1,0 +1,94 @@
+# LLM Agent-Optimized Requirements for RPGSim
+# Prioritized for agent productivity, not human preferences
+
+# Core Data Validation - Explicit, deterministic
+pydantic>=2.0.0              # Explicit data models and validation
+# typing-extensions>=4.0.0      # Enhanced typing (built-in Python 3.10+)
+
+# Testing - Simple, explicit, no framework magic
+pytest>=7.0.0                 # Simple assert-based testing
+# pytest-cov>=4.0.0           # Coverage reporting (optional for agents)
+# pytest-mock>=3.10.0         # Simple mocking (rarely needed)
+
+# Code Quality - Explicit rules, clear feedback
+black>=23.0.0                  # Simple code formatting
+isort>=5.12.0                  # Import sorting
+mypy>=1.0.0                    # Type checking (optional for agents)
+
+# Development Tools - Simple, explicit
+pre-commit>=3.0.0               # Pre-commit hooks (optional)
+colorama>=0.4.4                # Cross-platform colored terminal output
+
+# Mathematical Operations - Explicit calculations
+numpy>=1.21.0                  # Numerical operations (if needed)
+
+# Documentation - Simple docs (optional for agents)
+sphinx>=5.0.0                   # Documentation generation (rarely needed)
+sphinx-rtd-theme>=1.2.0        # Documentation theme (rarely needed)
+
+# JSON/YAML Processing - Simple data handling
+PyYAML>=6.0.0                  # YAML parsing (if needed)
+
+# Logging - Simple, explicit
+# Note: logging is built-in to Python
+
+# ----------------------------------------------------------------
+# EXCLUDED LIBRARIES (Not Agent-Optimized)
+# ----------------------------------------------------------------
+
+# No Rich/Textual - Adds complexity, hidden reactive behavior
+# No Curses - Built-in to Python, use if needed for simple UI
+# No Async Frameworks - Adds cognitive overhead for agents
+# No Complex Frameworks - Django, Flask, etc. add hidden magic
+# No Machine Learning Libraries - Not needed for this project
+# No Database Libraries - Use simple JSON files if needed
+# No Web Frameworks - Not a web application
+# No GUI Frameworks - Not a graphical application
+# No Complex Data Processing Libraries - Use built-in Python
+
+# ----------------------------------------------------------------
+# Agent-Optimized Philosophy
+# ----------------------------------------------------------------
+
+# 1. Minimal Dependencies - Fewer things to go wrong
+# 2. Explicit Behavior - No hidden magic or reactive behavior
+# 3. Deterministic - Same input always produces same output
+# 4. Simple Testing - Direct assert statements, no framework overhead
+# 5. Type Safety - Clear contracts, but minimal complexity
+# 6. Fast Learning Curve - Agents can understand quickly
+# 7. Easy Debugging - Clear error messages, explicit behavior
+# 8. Minimal Version Conflicts - Fewer dependencies = fewer conflicts
+
+# ----------------------------------------------------------------
+# Agent Success Criteria
+# ----------------------------------------------------------------
+
+# Code Generation: 95% success rate, minimal errors
+# Test Execution: 90% pass rate, clear failure reasons
+# Performance: Fast test execution (<1s for full suite)
+# Maintenance: Minimal dependency updates, stable APIs
+# Documentation: Self-documenting code, minimal external docs needed
+
+# ----------------------------------------------------------------
+# Agent Development Workflow
+# ----------------------------------------------------------------
+
+# 1. Write function with explicit contract
+# 2. Write direct test with assert statements
+# 3. Run simple test runner (pytest)
+# 4. Fix any issues (explicit error messages)
+# 5. Generate code quality reports (optional)
+# 6. Commit (no complex CI/CD needed)
+
+# ----------------------------------------------------------------
+# Agent Productivity Metrics
+# ----------------------------------------------------------------
+
+# Functions per hour: Target 10+
+# Tests per hour: Target 5+
+# Debug time per issue: Target <5 minutes
+# Learning time per library: Target <30 minutes
+# Integration time per system: Target <2 hours
+
+# This requirements.txt is optimized for LLM agent productivity,
+# not human developer experience or user interface quality.

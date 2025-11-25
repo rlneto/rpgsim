@@ -1,0 +1,3 @@
+"""
+Core systems for RPGSim
+"""
