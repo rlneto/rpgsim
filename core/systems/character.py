@@ -684,7 +684,9 @@ class Character:  # pylint: disable=too-many-instance-attributes
         except (ValueError, TypeError, AttributeError, KeyError):
             return False
 
-    def _parse_class_string(self, class_string: str) -> Optional[CharacterClass]:
+    def _parse_class_string(
+        self, class_string: str
+    ) -> Optional[CharacterClass]:
         """Parse string class name to CharacterClass enum"""
         class_mapping = {
             "warrior": CharacterClass.WARRIOR,
@@ -875,7 +877,9 @@ class Character:  # pylint: disable=too-many-instance-attributes
 
                 # Improve primary stat by 1
                 if self.class_type:
-                    primary_stat = self.CLASS_CONFIG[self.class_type]["primary_stat"]
+                    primary_stat = self.CLASS_CONFIG[self.class_type][
+                        "primary_stat"
+                    ]
                     self.stats[primary_stat] += 1
 
                 # Improve other stats occasionally
@@ -888,19 +892,25 @@ class Character:  # pylint: disable=too-many-instance-attributes
         except (ValueError, TypeError, AttributeError, KeyError):
             return False
 
-    def set_visual_customization(self, customization_type: str, value: str) -> bool:
+    def set_visual_customization(
+        self, customization_type: str, value: str
+    ) -> bool:
         """
         Set visual customization option
 
         Args:
-            customization_type: Type of customization (hair_color, eye_color, etc.)
+            customization_type: Type of customization (hair_color, eye_color, etc)
             value: Customization value
 
         Returns:
             True if customization set successfully
         """
         try:
-            if customization_type in ["hair_color", "eye_color", "skin_tone", "build"] and value:
+            if (
+                customization_type
+                in ["hair_color", "eye_color", "skin_tone", "build"]
+                and value
+            ):
                 self.visual_customization[customization_type] = value.strip()
                 return True
             return False

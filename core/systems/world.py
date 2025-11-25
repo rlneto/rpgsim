@@ -2,6 +2,7 @@
 World System for RPGSim
 Implements world exploration, cities, geography, and travel system
 """
+
 # pylint: disable=unused-variable
 
 import random
@@ -84,7 +85,9 @@ class ShopType(Enum):
 class Building:  # pylint: disable=too-few-public-methods
     """Represents a building in a city"""
 
-    def __init__(self, building_type: BuildingType, name: str, function_desc: str):
+    def __init__(
+        self, building_type: BuildingType, name: str, function_desc: str
+    ):
         self.building_type = building_type
         self.name = name
         self.function_desc = function_desc
@@ -110,7 +113,9 @@ class Building:  # pylint: disable=too-few-public-methods
             BuildingType.DOCKS: "A harbor for ships and sea travel",
             BuildingType.ALCHEMY_LAB: "A laboratory for creating potions and elixirs",
         }
-        return descriptions.get(self.building_type, "A unique building with special purpose")
+        return descriptions.get(
+            self.building_type, "A unique building with special purpose"
+        )
 
     def get_info(self) -> Dict:
         """Get building information"""
@@ -135,12 +140,40 @@ class Shop:  # pylint: disable=too-few-public-methods
     def _generate_inventory(self) -> List[str]:
         """Generate shop inventory based on type"""
         inventory_options = {
-            ShopType.WEAPONS: ["swords", "axes", "spears", "bows", "daggers", "hammers"],
-            ShopType.ARMOR: ["helmet", "chestplate", "gauntlets", "boots", "shield"],
-            ShopType.MAGIC: ["potions", "scrolls", "mana crystals", "spell books", "talismans"],
-            ShopType.GENERAL: ["food", "clothing", "tools", "rope", "torches", "backpacks"],
+            ShopType.WEAPONS: [
+                "swords",
+                "axes",
+                "spears",
+                "bows",
+                "daggers",
+                "hammers",
+            ],
+            ShopType.ARMOR: [
+                "helmet",
+                "chestplate",
+                "gauntlets",
+                "boots",
+                "shield",
+            ],
+            ShopType.MAGIC: [
+                "potions",
+                "scrolls",
+                "mana crystals",
+                "spell books",
+                "talismans",
+            ],
+            ShopType.GENERAL: [
+                "food",
+                "clothing",
+                "tools",
+                "rope",
+                "torches",
+                "backpacks",
+            ],
         }
-        base_items = inventory_options.get(self.shop_type, inventory_options[ShopType.GENERAL])
+        base_items = inventory_options.get(
+            self.shop_type, inventory_options[ShopType.GENERAL]
+        )
         num_items = min(random.randint(3, 6), len(base_items))
         return random.sample(base_items, num_items)
 
@@ -172,7 +205,13 @@ class Shop:  # pylint: disable=too-few-public-methods
 class City:  # pylint: disable=too-many-instance-attributes
     """Represents a city in the game world"""
 
-    def __init__(self, name: str, city_id: str, geography: GeographyType, culture: CultureType):
+    def __init__(
+        self,
+        name: str,
+        city_id: str,
+        geography: GeographyType,
+        culture: CultureType,
+    ):
         self.name = name
         self.city_id = city_id
         self.geography = geography
@@ -244,7 +283,9 @@ class City:  # pylint: disable=too-many-instance-attributes
             CultureType.NOMADIC: "traveling people and diverse traditions",
             CultureType.HIERARCHICAL: "strict social order and noble leadership",
         }
-        culture_desc_text = culture_desc.get(self.culture, "unique characteristics")
+        culture_desc_text = culture_desc.get(
+            self.culture, "unique characteristics"
+        )
         base_desc = f"{self.name} is a {self.culture.value} city known for its {culture_desc_text}"
         geography_desc = f" Located in {self.geography.value} terrain"
         return base_desc + geography_desc + "."
@@ -340,7 +381,9 @@ class WorldMap:
         """Get a city by name"""
         return self.cities.get(name)
 
-    def connect_cities(self, city1_name: str, city2_name: str, distance_factor: float = 1.0):
+    def connect_cities(
+        self, city1_name: str, city2_name: str, distance_factor: float = 1.0
+    ):
         """Create a bidirectional connection between cities"""
         city1 = self.get_city(city1_name)
         city2 = self.get_city(city2_name)
@@ -352,7 +395,9 @@ class WorldMap:
                 travel_time = self.travel_calculator.calculate_travel_time(
                     city1_name, city2_name, method, distance_factor
                 )
-                self.travel_calculator.set_travel_time(city1_name, city2_name, travel_time)
+                self.travel_calculator.set_travel_time(
+                    city1_name, city2_name, travel_time
+                )
 
     def get_connected_cities(self, city_name: str) -> List[str]:
         """Get list of cities connected to the specified city"""
@@ -412,7 +457,9 @@ class World:
             geography_types = list(GeographyType)
             culture_types = list(CultureType)
             # Create cities with unique geography and culture
-            for i, name in enumerate(city_names):  # pylint: disable=unused-variable
+            for i, name in enumerate(
+                city_names
+            ):  # pylint: disable=unused-variable
                 geography = random.choice(geography_types)
                 culture = random.choice(culture_types)
                 city_id = f"city_{i}"
@@ -436,8 +483,12 @@ class World:
             connected_cities = random.sample(available_cities, num_connections)
             for connected_city in connected_cities:
                 # Calculate distance factor based on geography
-                distance_factor = self._calculate_distance_factor(city, connected_city)
-                self.world_map.connect_cities(city.name, connected_city.name, distance_factor)
+                distance_factor = self._calculate_distance_factor(
+                    city, connected_city
+                )
+                self.world_map.connect_cities(
+                    city.name, connected_city.name, distance_factor
+                )
 
     def _calculate_distance_factor(self, city1: City, city2: City) -> float:
         """Calculate distance factor between cities based on geography"""
@@ -449,7 +500,10 @@ class World:
             (GeographyType.FOREST, GeographyType.TROPICAL): 0.9,
         }
         # Check for special pairs
-        valid_pairs = [(city1.geography, city2.geography), (city2.geography, city1.geography)]
+        valid_pairs = [
+            (city1.geography, city2.geography),
+            (city2.geography, city1.geography),
+        ]
         for pair, factor in geography_pairs.items():
             if pair in valid_pairs:
                 return factor
@@ -518,7 +572,9 @@ class World:
         """Get available travel options from current location"""
         if not self.current_location:
             return []
-        connected_cities = self.world_map.get_connected_cities(self.current_location)
+        connected_cities = self.world_map.get_connected_cities(
+            self.current_location
+        )
         options = []
         for city_name in connected_cities:
             city = self.world_map.get_city(city_name)

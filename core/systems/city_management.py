@@ -156,9 +156,21 @@ class City:
     # Building service definitions
     BUILDING_SERVICES = {
         BuildingType.TAVERN: ["food", "drinks", "lodging", "rumors"],
-        BuildingType.WEAPON_SHOP: ["weapon_sales", "weapon_repair", "weapon_upgrades"],
-        BuildingType.ARMOR_SHOP: ["armor_sales", "armor_repair", "custom_fitting"],
-        BuildingType.MAGIC_SHOP: ["magic_items", "spell_components", "enchanting"],
+        BuildingType.WEAPON_SHOP: [
+            "weapon_sales",
+            "weapon_repair",
+            "weapon_upgrades",
+        ],
+        BuildingType.ARMOR_SHOP: [
+            "armor_sales",
+            "armor_repair",
+            "custom_fitting",
+        ],
+        BuildingType.MAGIC_SHOP: [
+            "magic_items",
+            "spell_components",
+            "enchanting",
+        ],
         BuildingType.GENERAL_STORE: ["supplies", "tools", "food_items"],
         BuildingType.TEMPLE: [
             "healing",
@@ -166,16 +178,34 @@ class City:
             "confession",
             "religious_guidance",
         ],
-        BuildingType.GUILD_HALL: ["training", "quests", "professional_services"],
+        BuildingType.GUILD_HALL: [
+            "training",
+            "quests",
+            "professional_services",
+        ],
         BuildingType.MARKET: ["trading", "bargaining", "specialty_goods"],
         BuildingType.INN: ["rooms", "food", "stables", "local_information"],
-        BuildingType.BANK: ["deposits", "loans", "currency_exchange", "safe_storage"],
-        BuildingType.LIBRARY: ["research", "knowledge_sharing", "scrolls", "maps"],
+        BuildingType.BANK: [
+            "deposits",
+            "loans",
+            "currency_exchange",
+            "safe_storage",
+        ],
+        BuildingType.LIBRARY: [
+            "research",
+            "knowledge_sharing",
+            "scrolls",
+            "maps",
+        ],
         BuildingType.BLACKSMITH: ["metal_work", "repairs", "custom_items"],
         BuildingType.ALCHEMIST: ["potions", "ingredients", "transmutations"],
         BuildingType.TAILOR: ["clothing", "repairs", "custom_outfits"],
         BuildingType.JEWELER: ["jewelry", "gems", "enchanted_items"],
-        BuildingType.BARRACKS: ["training", "recruitment", "military_services"],
+        BuildingType.BARRACKS: [
+            "training",
+            "recruitment",
+            "military_services",
+        ],
     }
 
     # Cultural traits by economy type
@@ -389,7 +419,8 @@ class City:
             1, min(10, self.stats.wealth_level + modifiers["wealth_bonus"])
         )
         self.stats.prosperity = max(
-            0, min(100, self.stats.prosperity + (modifiers["wealth_bonus"] * 10))
+            0,
+            min(100, self.stats.prosperity + (modifiers["wealth_bonus"] * 10)),
         )
 
         # Adjust population based on economy
@@ -402,7 +433,9 @@ class City:
         else:
             self.stats.population = random.randint(4000, 30000)
 
-    def get_building_by_type(self, building_type: BuildingType) -> Optional[Building]:
+    def get_building_by_type(
+        self, building_type: BuildingType
+    ) -> Optional[Building]:
         """Get a building of a specific type"""
         for building in self.buildings:
             if building.type == building_type:
@@ -411,12 +444,16 @@ class City:
 
     def get_buildings_by_district(self, district: str) -> List[Building]:
         """Get all buildings in a specific district"""
-        return [b for b in self.buildings if b.position["district"] == district]
+        return [
+            b for b in self.buildings if b.position["district"] == district
+        ]
 
     def get_shop_availability(self) -> int:
         """Calculate shop availability percentage"""
         base_availability = 100
-        modifier = self.ECONOMY_MODIFIERS[self.economy_type]["shop_availability"]
+        modifier = self.ECONOMY_MODIFIERS[self.economy_type][
+            "shop_availability"
+        ]
         return int(base_availability * modifier)
 
     def get_price_multiplier(self) -> float:
@@ -427,17 +464,17 @@ class City:
         """Generate a description of the city"""
         population = self.stats.population
         descriptions = {
-    # pylint: disable=line-too-long
+            # pylint: disable=line-too-long
             EconomyType.TRADE: f"A bustling merchant hub with diverse marketplaces and {population} inhabitants",
-    # pylint: disable=line-too-long
+            # pylint: disable=line-too-long
             EconomyType.AGRICULTURAL: f"A peaceful farming community with fertile fields and {population} residents",
-    # pylint: disable=line-too-long
+            # pylint: disable=line-too-long
             EconomyType.INDUSTRIAL: f"A crafty center of innovation and manufacturing with {population} workers",
-    # pylint: disable=line-too-long
+            # pylint: disable=line-too-long
             EconomyType.MAGICAL: f"An arcane center filled with mystical energy and {population} practitioners",
-    # pylint: disable=line-too-long
+            # pylint: disable=line-too-long
             EconomyType.MINING: f"A rugged mountain settlement around mineral deposits with {population} miners",
-    # pylint: disable=line-too-long
+            # pylint: disable=line-too-long
             EconomyType.FISHING: f"A coastal town with thriving fishing industry and {population} fishermen",
         }
         base_desc = descriptions.get(
@@ -463,16 +500,22 @@ class City:
         )
         return summary
 
-    def update_reputation(self, player_id: str, change: int, reason: str = "") -> None:
+    def update_reputation(
+        self, player_id: str, change: int, reason: str = ""
+    ) -> None:
         """Update player reputation with this city"""
         if player_id not in self.player_reputation:
-            self.player_reputation[player_id] = PlayerReputation(city_id=self.id)
+            self.player_reputation[player_id] = PlayerReputation(
+                city_id=self.id
+            )
 
         rep = self.player_reputation[player_id]
         rep.reputation_score += change
 
         if reason:
-            rep.major_events.append({"event": reason, "reputation_impact": change})
+            rep.major_events.append(
+                {"event": reason, "reputation_impact": change}
+            )
 
     # pylint: disable=too-many-return-statements
     def get_player_reputation_level(self, player_id: str) -> ReputationLevel:
@@ -524,7 +567,11 @@ class City:
         level = self.get_player_reputation_level(player_id)
 
         basic_services = ["general_store", "tavern"]
-        advanced_services = ["specialty_shop", "guild_membership", "elite_training"]
+        advanced_services = [
+            "specialty_shop",
+            "guild_membership",
+            "elite_training",
+        ]
         premium_services = ["noble_favor", "city_council", "royal_commissions"]
 
         available = basic_services.copy()
@@ -552,7 +599,9 @@ class City:
 
         # Update development level occasionally
         if random.random() < 0.1:
-            self.stats.development_level = min(5, self.stats.development_level + 1)
+            self.stats.development_level = min(
+                5, self.stats.development_level + 1
+            )
 
 
 class CityManager:
@@ -611,7 +660,9 @@ class CityManager:
     def get_cities_by_economy(self, economy_type: EconomyType) -> List[City]:
         """Get cities by economy type"""
         return [
-            city for city in self.cities.values() if city.economy_type == economy_type
+            city
+            for city in self.cities.values()
+            if city.economy_type == economy_type
         ]
 
     def simulate_all_cities_growth(self, days: int = 30) -> None:
@@ -690,6 +741,8 @@ def validate_city_balance(cities: List[City]) -> bool:
     return unique_economies >= min(3, len(EconomyType))
 
 
-def verify_minimum_building_count(cities: List[City], min_buildings: int = 8) -> bool:
+def verify_minimum_building_count(
+    cities: List[City], min_buildings: int = 8
+) -> bool:
     """Verify all cities have minimum building count"""
     return all(len(city.buildings) >= min_buildings for city in cities)
