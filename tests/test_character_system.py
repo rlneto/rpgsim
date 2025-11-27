@@ -5,11 +5,8 @@ Tests updated to match actual character.py implementation
 """
 
 import pytest
-from core.systems.character import (
-    Character, CharacterClass, get_all_character_classes,
-    get_class_balance_stats, validate_class_balance,
-    verify_unique_mechanics, verify_minimum_abilities
-)
+from core.models import Character, CharacterClass, CharacterStats
+from core.engine import get_game_engine
 
 
 class TestCharacterClass:
@@ -135,7 +132,9 @@ class TestCharacterInitialization:
         """Test that all character classes can be created."""
         for character_class in CharacterClass:
             character = Character()
-            success = character.create_character(f"Test{character_class.value}", character_class)
+            success = character.create_character(
+                f"Test{character_class.value}", character_class
+            )
 
             assert success == True, f"Failed to create {character_class}"
             assert character.created == True
@@ -292,7 +291,7 @@ class TestCharacterProgression:
         character.take_damage(20)
 
         # Damage affects hp attribute (should exist after checking)
-        assert hasattr(character, 'hp')
+        assert hasattr(character, "hp")
 
     def test_take_damage_zero(self):
         """Test taking zero damage."""
@@ -511,7 +510,9 @@ class TestClassConfigs:
     def test_all_classes_have_config(self):
         """Test that all character classes have configuration data."""
         for character_class in CharacterClass:
-            assert character_class in Character.CLASS_CONFIG, f"Missing config for {character_class}"
+            assert character_class in Character.CLASS_CONFIG, (
+                f"Missing config for {character_class}"
+            )
 
     def test_class_config_structure(self):
         """Test that all class configs have required keys."""
@@ -525,16 +526,29 @@ class TestClassConfigs:
 
     def test_base_stats_structure(self):
         """Test that base stats have all required attributes."""
-        required_stats = ["strength", "dexterity", "intelligence", "wisdom", "charisma", "constitution"]
+        required_stats = [
+            "strength",
+            "dexterity",
+            "intelligence",
+            "wisdom",
+            "charisma",
+            "constitution",
+        ]
 
         for character_class in CharacterClass:
             config = Character.CLASS_CONFIG[character_class]
             base_stats = config["base_stats"]
 
             for stat in required_stats:
-                assert stat in base_stats, f"Missing {stat} in base_stats for {character_class}"
-                assert isinstance(base_stats[stat], int), f"{stat} should be int for {character_class}"
-                assert 8 <= base_stats[stat] <= 18, f"{stat} should be between 8 and 18 for {character_class}"
+                assert stat in base_stats, (
+                    f"Missing {stat} in base_stats for {character_class}"
+                )
+                assert isinstance(base_stats[stat], int), (
+                    f"{stat} should be int for {character_class}"
+                )
+                assert 8 <= base_stats[stat] <= 18, (
+                    f"{stat} should be between 8 and 18 for {character_class}"
+                )
 
     def test_abilities_minimum_count(self):
         """Test that all classes have minimum required abilities."""
@@ -542,7 +556,9 @@ class TestClassConfigs:
             config = Character.CLASS_CONFIG[character_class]
             abilities = config["abilities"]
 
-            assert len(abilities) >= 10, f"{character_class} should have at least 10 abilities, got {len(abilities)}"
+            assert len(abilities) >= 10, (
+                f"{character_class} should have at least 10 abilities, got {len(abilities)}"
+            )
 
     def test_mechanic_uniqueness(self):
         """Test that all class mechanics are unique."""
@@ -576,7 +592,9 @@ class TestEdgeCases:
 
             # All base stats should be in reasonable range
             for stat, value in base_stats.items():
-                assert 1 <= value <= 20, f"Stat {stat} = {value} out of range for {character_class}"
+                assert 1 <= value <= 20, (
+                    f"Stat {stat} = {value} out of range for {character_class}"
+                )
 
     def test_experience_overflow(self):
         """Test adding very large amounts of experience."""

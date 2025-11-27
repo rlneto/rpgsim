@@ -7,7 +7,7 @@ equipment slots, and inventory management functionality.
 import random
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
-from enum import Enum
+
 
 from core.models import Item, ItemType, ItemRarity
 
@@ -519,9 +519,7 @@ class EquipmentManager:
         }
         self.item_generator = ItemGenerator()
 
-    def equip_item(
-        self, item: Item, character_stats: Dict[str, int]
-    ) -> Tuple[bool, str, Optional[Item]]:
+    def equip_item(self, item: Item) -> Tuple[bool, str, Optional[Item]]:
         """Equip an item to the appropriate slot"""
 
         if not item.can_be_equipped():
@@ -662,16 +660,15 @@ class EquipmentManager:
 
         if item_type == ItemType.WEAPON:
             return EquipmentSlot.WEAPON
-        elif item_type == ItemType.ARMOR:
+        if item_type == ItemType.ARMOR:
             return EquipmentSlot.ARMOR
-        elif item_type == ItemType.ACCESSORY:
+        if item_type == ItemType.ACCESSORY:
             # Find first available accessory slot
             if not self.equipment_slots[EquipmentSlot.ACCESSORY1].equipped_item:
                 return EquipmentSlot.ACCESSORY1
-            elif not self.equipment_slots[EquipmentSlot.ACCESSORY2].equipped_item:
+            if not self.equipment_slots[EquipmentSlot.ACCESSORY2].equipped_item:
                 return EquipmentSlot.ACCESSORY2
-            else:
-                return EquipmentSlot.ACCESSORY1  # Default to first slot
+            return EquipmentSlot.ACCESSORY1  # Default to first slot
         return None
 
 

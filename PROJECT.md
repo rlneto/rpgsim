@@ -987,11 +987,19 @@ stages:
 - **Screens**: GameScreen, CharacterCreationScreen, MainMenuScreen implementados
 - **Interfaces**: Rich terminal interface com Textual framework integrado
 
-#### **⏳ IN PROGRESS - World System Modularization**
+#### **✅ COMPLETED - World System Modularization**
 - **Domain**: Location, World, TravelConnection implementados ✅
-- **Services**: World navigation, travel logic implementados ❌
-- **Repositories**: World data management implementados ❌
-- **Facade**: WorldSystem API implementado ❌
+- **Services**: World navigation, travel logic implementados ✅
+- **Repositories**: World data management implementados ✅
+- **Facade**: WorldSystem API implementado ✅
+
+#### **✅ COMPLETED - Combat System Modularization**
+- **Domain**: Combat, Combatant, Attack, CombatAction, CombatLog, CombatStats implementados ✅
+- **Services**: CombatCreationService, CombatExecutionService, CombatAIService, CombatStatusService implementados ✅
+- **Repositories**: Memory repositories para todos os componentes implementados ✅
+- **Interfaces**: Repository interfaces definidos ✅
+- **Facade**: CombatSystem API unificada implementada ✅
+- **Métricas**: 717 linhas no maior arquivo (redução de 19% vs 886 originais)
 
 #### **✅ COMPLETED - Architecture Foundation**
 - **Pattern**: Clean Architecture estabelecido para TODOS os sistemas
@@ -1033,19 +1041,55 @@ stages:
 - **Funções de Negócio**: Dynamic pricing, supply/demand, bulk discounts, reputation
 - **Estimativa**: 2-3 dias
 
-**2. Combat System - CRÍTICO (Core gameplay)**
-- **Arquivo Atual**: `core/systems/combat.py` (monolítico)
-- **Testes Afetados**: `tests/test_combat_system.py`, `tests/test_combat_boundary.py`
+**2. Combat System - ✅ COMPLETO**
+- **Arquivo Original**: `core/systems/combat.py` (886 linhas)
+- **Arquivo Modular**: `core/systems/combat/domain/combat.py` (717 linhas)
+- **Módulos Criados**:
+  - `core/systems/combat/domain/combat.py` - Combat, Combatant, Attack, CombatAction, CombatLog, CombatStats ✅
+  - `core/systems/combat/services/combat_service.py` - CombatCreationService, CombatExecutionService, CombatAIService, CombatStatusService ✅
+  - `core/systems/combat/repositories/memory_repository.py` - Memory repositories para todos os componentes ✅
+  - `core/systems/combat/interfaces/repositories.py` - Repository interfaces ✅
+  - `core/systems/combat/facade.py` - CombatSystem facade ✅
+- **Funcionalidades**: Turn-based combat, AI behavior, damage calculation, status effects ✅
+- **Redução**: 19% (886 → 717 linhas no maior arquivo)
+
+**3. Quest System - CRÍTICO (1432 linhas)**
+- **Arquivo Atual**: `core/systems/quest.py` (monolítico)
+- **Testes Afetados**: `tests/test_quest_system.py`
 - **Módulos a Criar**:
-  - `core/systems/combat/domain/combat.py` - Combat, Attack, Defense, CombatState, CombatLog
-  - `core/systems/combat/services/combat_service.py` - CombatService, DamageService, AITacticService
-  - `core/systems/combat/repositories/memory_repository.py` - CombatRepository, AttackRepository
-  - `core/systems/combat/interfaces/repositories.py` - Repository interfaces
-  - `core/systems/combat/facade.py` - CombatSystem facade
-- **Funcionalidades**: Turn-based combat, AI behavior, damage calculation, status effects
+  - `core/systems/quest/domain/quest.py` - Quest, QuestStep, QuestReward, QuestState
+  - `core/systems/quest/services/quest_service.py` - QuestCreationService, QuestProgressService, QuestRewardService
+  - `core/systems/quest/repositories/memory_repository.py` - QuestRepository, QuestStepRepository
+  - `core/systems/quest/interfaces/repositories.py` - Repository interfaces
+  - `core/systems/quest/facade.py` - QuestSystem facade
+- **Funcionalidades**: Quest management, progress tracking, reward distribution, conditional logic
 - **Estimativa**: 3-4 dias
 
-**3. Equipment System - ALTA (Dependente Shop)**
+**4. Gamification System - CRÍTICO (1283 linhas)**
+- **Arquivo Atual**: `core/systems/gamification.py` (monolítico)
+- **Testes Afetados**: `tests/test_gamification_system.py`
+- **Módulos a Criar**:
+  - `core/systems/gamification/domain/gamification.py` - Achievement, Badge, Progress, Reward
+  - `core/systems/gamification/services/gamification_service.py` - AchievementService, ProgressService, RewardService
+  - `core/systems/gamification/repositories/memory_repository.py` - AchievementRepository, ProgressRepository
+  - `core/systems/gamification/interfaces/repositories.py` - Repository interfaces
+  - `core/systems/gamification/facade.py` - GamificationSystem facade
+- **Funcionalidades**: Achievement tracking, progress metrics, reward distribution, DDA
+- **Estimativa**: 3-4 dias
+
+**5. Dungeon System - ALTA (1028 linhas)**
+- **Arquivo Atual**: `core/systems/dungeon.py` (monolítico)
+- **Testes Afetados**: `tests/test_dungeon_system.py`
+- **Módulos a Criar**:
+  - `core/systems/dungeon/domain/dungeon.py` - Dungeon, Room, Trap, Treasure
+  - `core/systems/dungeon/services/dungeon_service.py` - DungeonGenerationService, DungeonExplorationService
+  - `core/systems/dungeon/repositories/memory_repository.py` - DungeonRepository, RoomRepository
+  - `core/systems/dungeon/interfaces/repositories.py` - Repository interfaces
+  - `core/systems/dungeon/facade.py` - DungeonSystem facade
+- **Funcionalidades**: Procedural generation, exploration mechanics, trap systems, treasure distribution
+- **Estimativa**: 2-3 dias
+
+**6. Equipment System - ALTA (897 linhas)**
 - **Arquivo Atual**: `core/systems/equipment.py` (monolítico)
 - **Testes Afetados**: `tests/test_equipment_system.py`
 - **Módulos a Criar**:
@@ -1057,19 +1101,7 @@ stages:
 - **Funcionalidades**: Item management, equipment effects, stat modifications, enchantments
 - **Estimativa**: 2-3 dias
 
-**4. Quest System - ALTA**
-- **Arquivo Atual**: `core/systems/quest.py` (monolítico)
-- **Testes Afetados**: `tests/test_quest_system.py`
-- **Módulos a Criar**:
-  - `core/systems/quest/domain/quest.py` - Quest, QuestStep, QuestReward, QuestState
-  - `core/systems/quest/services/quest_service.py` - QuestCreationService, QuestProgressService, QuestRewardService
-  - `core/systems/quest/repositories/memory_repository.py` - QuestRepository, QuestStepRepository
-  - `core/systems/quest/interfaces/repositories.py` - Repository interfaces
-  - `core/systems/quest/facade.py` - QuestSystem facade
-- **Funcionalidades**: Quest management, progress tracking, reward distribution, conditional logic
-- **Estimativa**: 2-3 dias
-
-**5. City Management System - MÉDIA**
+**11. City Management System - MÉDIA (748 linhas)**
 - **Arquivo Atual**: `core/systems/city_management.py` (monolítico)
 - **Testes Afetados**: `tests/test_city_management_system.py`
 - **Módulos a Criar**:
@@ -1079,6 +1111,37 @@ stages:
   - `core/systems/city/interfaces/repositories.py` - Repository interfaces
   - `core/systems/city/facade.py` - CityManagementSystem facade
 - **Funcionalidades**: City growth, service management, population dynamics, economy simulation
+- **Estimativa**: 2 dias
+
+**12. Travel System - MÉDIA (981 linhas)**
+- **Arquivo Atual**: `core/systems/travel.py` (monolítico)
+- **Testes Afetados**: `tests/test_travel_system.py`, `tests/test_navigation_system.py`
+- **Ação**: Integrar/consolidar com World System TravelService
+- **Migração**: Mover lógica de `travel.py` para `world/services/travel_service.py`
+- **Estimativa**: 1 dia
+
+**13. Spells System - MÉDIA (972 linhas)**
+- **Arquivo Atual**: `core/systems/spells.py` (monolítico)
+- **Testes Afetados**: `tests/test_spells_system.py`
+- **Módulos a Criar**:
+  - `core/systems/spells/domain/spells.py` - Spell, SpellEffect, SpellSchool, SpellBook
+  - `core/systems/spells/services/spell_service.py` - SpellCastingService, SpellLearningService, SpellCreationService
+  - `core/systems/spells/repositories/memory_repository.py` - SpellRepository, SpellBookRepository
+  - `core/systems/spells/interfaces/repositories.py` - Repository interfaces
+  - `core/systems/spells/facade.py` - SpellSystem facade
+- **Funcionalidades**: Spell casting, mana management, spell learning, magical effects
+- **Estimativa**: 2-3 dias
+
+**14. Progression System - MÉDIA (855 linhas)**
+- **Arquivo Atual**: `core/systems/progression.py` (monolítico)
+- **Testes Afetados**: `tests/test_progression_system.py`
+- **Módulos a Criar**:
+  - `core/systems/progression/domain/progression.py` - Progress, Level, Skill, Experience
+  - `core/systems/progression/services/progression_service.py` - LevelingService, SkillService, ExperienceService
+  - `core/systems/progression/repositories/memory_repository.py` - ProgressRepository, SkillRepository
+  - `core/systems/progression/interfaces/repositories.py` - Repository interfaces
+  - `core/systems/progression/facade.py` - ProgressionSystem facade
+- **Funcionalidades**: Level advancement, skill development, XP calculation
 - **Estimativa**: 2 dias
 
 **6. Travel System - MÉDIA (Overlap com World)**
@@ -1124,24 +1187,27 @@ stages:
 
 ### **📊 MÉTRICAS DE PROGRESSO ATUAL**
 
-**Sistemas Totais**: 11 sistemas principais
-**Sistemas Modularizados**: 3/11 (27%)
+**Sistemas Totais**: 14 sistemas principais
+**Sistemas Modularizados**: 5/14 (36%)
 - ✅ Character System (completo)
 - ✅ UI System (completo)  
 - ✅ World System (completo)
+- ✅ Shop System (completo)
+- ✅ Combat System (completo)
 
-**Sistemas Pendentes**: 8/11 (73%)
-- ❌ Shop System (crítico)
-- ❌ Combat System (crítico)
-- ❌ Equipment System (alta)
-- ❌ Quest System (alta)
-- ❌ City Management System (média)
-- ❌ Travel System (média)
-- ❌ Gamification System (média)
+**Sistemas Pendentes**: 9/14 (64%)
+- ❌ Quest System (crítico - 1432 linhas)
+- ❌ Gamification System (crítico - 1283 linhas)
+- ❌ Dungeon System (alta - 1028 linhas)
+- ❌ Travel System (média - 981 linhas)
+- ❌ Spells System (média - 972 linhas)
+- ❌ Equipment System (alta - 897 linhas)
+- ❌ Progression System (média - 855 linhas)
+- ❌ City Management System (média - 748 linhas)
 - ❌ Dungeon System (baixa)
 
-**Estimativa Total P1.1**: 15-20 dias adicionais
-**Conclusão P1.1**: ~25-30 dias totais (incluindo Character, UI, World já feitos)
+**Estimativa Total P1.1**: 20-25 dias adicionais
+**Conclusão P1.1**: ~30-35 dias totais (incluindo Character, UI, World, Shop, Combat já feitos)
 
 ### **📋 BLOQUEIOS REMOVIDOS**
 
@@ -1156,6 +1222,12 @@ stages:
 - ❌ No ASCII art → ✅ Beautiful ASCII art with animations
 - ❌ No visual feedback → ✅ Rich formatting and effects
 - ❌ No modular UI → ✅ Complete modular UI architecture
+
+#### **✅ Combat System Architecture (RESOLVIDO)**
+- ❌ Monolithic combat.py (886 linhas) → ✅ Modular (6 arquivos <717)
+- ❌ Mixed combat logic → ✅ Clean separation of concerns
+- ❌ No AI behavior system → ✅ Dedicated AI service
+- ❌ Poor combat logging → ✅ Comprehensive logging system
 
 #### **✅ Architecture Patterns (RESOLVIDO)**
 - ❌ No established patterns → ✅ Clean Architecture

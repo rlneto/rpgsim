@@ -10,81 +10,14 @@ from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
 
 
-class TerrainType:
-    """Types of terrain that affect travel"""
-
-    PLAINS = "plains"
-    FOREST = "forest"
-    MOUNTAINS = "mountains"
-    HILLS = "hills"
-    SWAMP = "swamp"
-    DESERT = "desert"
-    COASTAL = "coastal"
-    TUNDRA = "tundra"
-    JUNGLE = "jungle"
-    VOLCANIC = "volcanic"
-
-
-class TravelMethod:
-    """Methods of travel available to players"""
-
-    WALK = "walk"
-    HORSE = "horse"
-    CART = "cart"
-    BOAT = "boat"
-    SHIP = "ship"
-    TELEPORT = "teleport"
-
-
-class TravelEvent:
-    """Types of events that can occur during travel"""
-
-    MERCHANT_ENCOUNTER = "merchant_encounter"
-    BANDIT_ATTACK = "bandit_attack"
-    WEATHER_CHANGE = "weather_change"
-    WILD_ANIMAL = "wild_animal"
-    LOST_TRAVELER = "lost_traveler"
-    ANCIENT_RUINS = "ancient_ruins"
-    NATURAL_RESOURCE = "natural_resource"
-    ROAD_BLOCKAGE = "road_blockage"
-    FRIENDLY_PATROL = "friendly_patrol"
-    MYSTERIOUS_STRANGER = "mysterious_stranger"
-    TREASURE_MAP = "treasure_map"
-    EQUIPMENT_FAILURE = "equipment_failure"
-
-
-class TravelEquipment:
-    """Special equipment that aids travel"""
-
-    MOUNT = "mount"
-    CART = "cart"
-    BOAT = "boat"
-    CLIMBING_GEAR = "climbing_gear"
-    COMPASS = "compass"
-    LANTERN = "lantern"
-    CLOAK = "cloak"
-    SURVIVAL_KIT = "survival_kit"
-
-
-class EncounterDifficulty:
-    """Difficulty levels for encounters"""
-
-    TRIVIAL = 1
-    EASY = 2
-    MODERATE = 3
-    HARD = 4
-    DEADLY = 5
-
-
-class TravelStatus:
-    """Status of ongoing travel"""
-
-    PLANNING = "planning"
-    IN_PROGRESS = "in_progress"
-    PAUSED = "paused"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    INTERRUPTED = "interrupted"
+# Import enums from separate module
+from .travel_enums import (
+    TerrainType,
+    TravelMethod,
+    TravelEvent,
+    TravelEquipment,
+    TravelStatus,
+)
 
 
 @dataclass
@@ -97,11 +30,7 @@ class Position:
 
     def distance_to(self, other: "Position") -> float:
         """Calculate Manhattan distance to another position"""
-        return (
-            abs(self.x - other.x)
-            + abs(self.y - other.y)
-            + abs(self.z - other.z)
-        )
+        return abs(self.x - other.x) + abs(self.y - other.y) + abs(self.z - other.z)
 
 
 @dataclass
@@ -363,29 +292,37 @@ class TravelSystem:
 
     def __init__(self):
         """Initialize the travel system"""
-        self.active_travels: Dict[str, ActiveTravel] = {}
-        self.discovered_routes: Dict[str, List[TravelRoute]] = {}
-        self.fast_travel_unlocks: Dict[str, bool] = {}
+        self._active_travels: Dict[str, ActiveTravel] = {}
+        self._discovered_routes: Dict[str, List[TravelRoute]] = {}
+        self._fast_travel_unlocks: Dict[str, bool] = {}
 
-    def calculate_distance(
-        self, from_pos: Position, to_pos: Position
-    ) -> float:
+    @property
+    def active_travels(self) -> Dict[str, ActiveTravel]:
+        """Get active travels"""
+        return self._active_travels
+
+    @property
+    def discovered_routes(self) -> Dict[str, List[TravelRoute]]:
+        """Get discovered routes"""
+        return self._discovered_routes
+
+    @property
+    def fast_travel_unlocks(self) -> Dict[str, bool]:
+        """Get fast travel unlocks"""
+        return self._fast_travel_unlocks
+
+    def calculate_distance(self, from_pos: Position, to_pos: Position) -> float:
         """Calculate travel distance between two positions"""
         return from_pos.distance_to(to_pos)
 
-    def calculate_travel_cost(
-        self, route: TravelRoute, plan: TravelPlan
-    ) -> TravelCost:
+    def calculate_travel_cost(self, route: TravelRoute, plan: TravelPlan) -> TravelCost:
         """Calculate comprehensive travel costs"""
         base_distance = route.distance
         terrain_effect = self.TERRAIN_EFFECTS[route.terrain]
         method_effect = self.TRAVEL_METHODS[plan.method]
 
         # Base costs
-        time_mult = (
-            terrain_effect["time_multiplier"]
-            * method_effect["time_multiplier"]
-        )
+        time_mult = terrain_effect["time_multiplier"] * method_effect["time_multiplier"]
         base_time = int(base_distance * 2 * time_mult)
         base_gold = int(base_distance * 5 * terrain_effect["cost_multiplier"])
 
@@ -412,9 +349,7 @@ class TravelSystem:
 
         # Calculate final costs
         final_time = max(1, int(base_time * (1 - time_reduction)))
-        final_gold = max(
-            0, int(base_gold * (1 - cost_reduction) * cost_multiplier)
-        )
+        final_gold = max(0, int(base_gold * (1 - cost_reduction) * cost_multiplier))
 
         # Resource costs scale with party size
         return TravelCost(
@@ -453,15 +388,10 @@ class TravelSystem:
             party_modifier = 0.7  # Large group is intimidating
 
         # Safe route bonus
-        safe_modifier = (
-            0.5 if route.safe_route_available and plan.fast_travel else 1.0
-        )
+        safe_modifier = 0.5 if route.safe_route_available and plan.fast_travel else 1.0
 
         final_chance = (
-            base_chance
-            * distance_modifier
-            * danger_modifier
-            * terrain_modifier
+            base_chance * distance_modifier * danger_modifier * terrain_modifier
         )
         final_chance *= (1 - level_reduction) * party_modifier * safe_modifier
 
@@ -472,9 +402,7 @@ class TravelSystem:
     ) -> List[TravelEventData]:
         """Generate random events for a journey"""
         events = []
-        encounter_chance = self.calculate_encounter_chance(
-            route, plan, character_level
-        )
+        encounter_chance = self.calculate_encounter_chance(route, plan, character_level)
 
         # Calculate costs first
         costs = self.calculate_travel_cost(route, plan)
@@ -503,9 +431,7 @@ class TravelSystem:
                 TravelEvent.TREASURE_MAP,
                 TravelEvent.EQUIPMENT_FAILURE,
             ]
-            event_weights = [
-                self.EVENT_TYPES[et]["base_chance"] for et in event_types
-            ]
+            event_weights = [self.EVENT_TYPES[et]["base_chance"] for et in event_types]
 
             event_type = random.choices(event_types, weights=event_weights)[0]
             time_occurred = random.randint(1, costs.time_cost)
@@ -570,12 +496,8 @@ class TravelSystem:
         elif event_type == TravelEvent.BANDIT_ATTACK:
             details = {
                 "bandit_count": random.randint(2, 8),
-                "difficulty": min(
-                    5, max(1, character_level + random.randint(-2, 2))
-                ),
-                "demand_type": random.choice(
-                    ["gold", "supplies", "equipment"]
-                ),
+                "difficulty": min(5, max(1, character_level + random.randint(-2, 2))),
+                "demand_type": random.choice(["gold", "supplies", "equipment"]),
                 "negotiation_possible": random.choice([True, False]),
             }
         elif event_type == TravelEvent.WILD_ANIMAL:
@@ -608,18 +530,14 @@ class TravelSystem:
                 ),
                 "duration": random.randint(1, 8),
                 "visibility": random.choice(["poor", "fair", "good"]),
-                "movement_impact": random.choice(
-                    ["slowed", "hindered", "blocked"]
-                ),
+                "movement_impact": random.choice(["slowed", "hindered", "blocked"]),
             }
         elif event_type == TravelEvent.LOST_TRAVELER:
             details = {
                 "traveler_type": random.choice(
                     ["merchant", "pilgrim", "scholar", "noble"]
                 ),
-                "condition": random.choice(
-                    ["injured", "lost", "sick", "robbed"]
-                ),
+                "condition": random.choice(["injured", "lost", "sick", "robbed"]),
                 "needs_help": True,
                 "potential_reward": random.choice(
                     [False, True, True]
@@ -627,9 +545,7 @@ class TravelSystem:
             }
         elif event_type == TravelEvent.ANCIENT_RUINS:
             details = {
-                "ruin_type": random.choice(
-                    ["temple", "fortress", "tower", "village"]
-                ),
+                "ruin_type": random.choice(["temple", "fortress", "tower", "village"]),
                 "condition": random.choice(
                     ["partially_intact", "overgrown", "collapsing"]
                 ),
@@ -667,9 +583,7 @@ class TravelSystem:
             }
         elif event_type == TravelEvent.TREASURE_MAP:
             details = {
-                "map_type": random.choice(
-                    ["chest", "cache", "hidden_location"]
-                ),
+                "map_type": random.choice(["chest", "cache", "hidden_location"]),
                 "clarity": random.choice(["clear", "partial", "cryptic"]),
                 "distance_from_path": random.randint(1, 5),
                 "difficulty_level": random.randint(1, 5),
@@ -726,9 +640,7 @@ class TravelSystem:
 
         # Check if destination is discovered
         player_routes = self.discovered_routes.get(player_id, [])
-        discovered_destinations = [
-            route.to_location for route in player_routes
-        ]
+        discovered_destinations = [route.to_location for route in player_routes]
 
         if to_location not in discovered_destinations:
             return False, "Destination not discovered"
@@ -876,7 +788,7 @@ class TravelSystem:
         ]
 
     def calculate_fast_travel_cost(
-        self, route: TravelRoute, character_level: int
+        self, route: TravelRoute, _character_level: int
     ) -> TravelCost:
         """Calculate costs for fast travel (3x normal cost, 10% time)"""
         plan = TravelPlan(
@@ -936,9 +848,7 @@ def get_all_travel_equipment() -> List[str]:
     ]
 
 
-def calculate_route_difficulty(
-    route: TravelRoute, character_level: int
-) -> str:
+def calculate_route_difficulty(route: TravelRoute, character_level: int) -> str:
     """Calculate difficulty level of a route for a character"""
     if route.level_requirement > character_level:
         return "IMPOSSIBLE"

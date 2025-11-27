@@ -6,11 +6,6 @@ Optimized for LLM agent development with explicit, deterministic values
 from typing import Dict, Any
 from core.models import (
     CharacterStats,
-    ItemRarity,
-    ItemType,
-    QuestStatus,
-    EnemyType,
-    LocationType,
 )
 
 # [CONST_001] - Character class default stats
@@ -595,13 +590,21 @@ FILE_PATHS: Dict[str, str] = {
 # Explicit error messages for agent understanding
 ERROR_MESSAGES: Dict[str, str] = {
     "character_name_empty": "Character name cannot be empty",
-    "character_name_too_long": f"Character name cannot exceed {GAME_CONFIG['max_character_name_length']} characters",
-    "character_name_invalid_chars": "Character name can only contain letters, numbers, spaces, hyphens, and apostrophes",
+    "character_name_too_long": (
+        f"Character name cannot exceed {GAME_CONFIG['max_character_name_length']} characters"
+    ),
+    "character_name_invalid_chars": (
+        "Character name can only contain letters, numbers, spaces, hyphens, and apostrophes"
+    ),
     "character_name_double_spaces": "Character name cannot contain consecutive spaces",
     "character_name_leading_trailing_spaces": "Character name cannot start or end with spaces",
     "character_class_invalid": "Invalid character class",
-    "character_level_too_low": f"Character level must be at least {GAME_CONFIG['min_character_level']}",
-    "character_level_too_high": f"Character level cannot exceed {GAME_CONFIG['max_character_level']}",
+    "character_level_too_low": (
+        f"Character level must be at least {GAME_CONFIG['min_character_level']}"
+    ),
+    "character_level_too_high": (
+        f"Character level cannot exceed {GAME_CONFIG['max_character_level']}"
+    ),
     "character_hp_negative": "Character HP cannot be negative",
     "character_hp_exceeds_max": "Character HP cannot exceed maximum HP",
     "character_max_hp_negative": "Character max HP must be positive",
@@ -610,17 +613,33 @@ ERROR_MESSAGES: Dict[str, str] = {
     "character_experience_negative": "Character experience cannot be negative",
     "character_defeated": "Character is defeated",
     "damage_negative": "Damage cannot be negative",
-    "damage_exceeds_cap": f"Damage cannot exceed {GAME_CONFIG['combat_damage_cap']}",
+    "damage_exceeds_cap": (f"Damage cannot exceed {GAME_CONFIG['combat_damage_cap']}"),
     "healing_negative": "Healing amount cannot be negative",
     "item_id_invalid": "Invalid item ID",
-    "item_name_too_long": f"Item name cannot exceed {VALIDATION_CONFIG['max_item_name_length']} characters",
-    "item_description_too_long": f"Item description cannot exceed {VALIDATION_CONFIG['max_item_description_length']} characters",
+    "item_name_too_long": (
+        f"Item name cannot exceed {VALIDATION_CONFIG['max_item_name_length']} characters"
+    ),
+    "item_description_too_long": (
+        f"Item description cannot exceed "
+        f"{VALIDATION_CONFIG['max_item_description_length']} characters"
+    ),
     "quest_id_invalid": "Invalid quest ID",
-    "quest_name_too_long": f"Quest name cannot exceed {VALIDATION_CONFIG['max_quest_name_length']} characters",
-    "quest_description_too_long": f"Quest description cannot exceed {VALIDATION_CONFIG['max_quest_description_length']} characters",
+    "quest_name_too_long": (
+        f"Quest name cannot exceed {VALIDATION_CONFIG['max_quest_name_length']} characters"
+    ),
+    "quest_description_too_long": (
+        f"Quest description cannot exceed "
+        f"{VALIDATION_CONFIG['max_quest_description_length']} characters"
+    ),
     "location_id_invalid": "Invalid location ID",
-    "location_name_too_long": f"Location name cannot exceed {VALIDATION_CONFIG['max_location_name_length']} characters",
-    "location_description_too_long": f"Location description cannot exceed {VALIDATION_CONFIG['max_location_description_length']} characters",
+    "location_name_too_long": (
+        f"Location name cannot exceed "
+        f"{VALIDATION_CONFIG['max_location_name_length']} characters"
+    ),
+    "location_description_too_long": (
+        f"Location description cannot exceed "
+        f"{VALIDATION_CONFIG['max_location_description_length']} characters"
+    ),
 }
 
 # [CONST_009] - Combat configuration constants
@@ -634,7 +653,7 @@ COMBAT_CONFIG = {
     "defense_reduction_factor": 0.3,
     "armor_absorption": 0.2,
     "max_combat_rounds": 50,
-    "initiative_bonus_per_dex": 0.1
+    "initiative_bonus_per_dex": 0.1,
 }
 
 COMBAT_FORMULAS = {
@@ -642,42 +661,15 @@ COMBAT_FORMULAS = {
     "hp_formula": "base_hp + constitution * 5",
     "initiative_formula": "dexterity * 0.1 + random(1, 10)",
     "defense_formula": "dexterity * 0.5",
-    "physical_damage": {
-        "base_damage": 5,
-        "stat_multiplier": 0.5
-    },
-    "magical_damage": {
-        "base_damage": 3,
-        "stat_multiplier": 0.7
-    },
-    "hit_chance": {
-        "base_hit": 75,
-        "min_hit": 10,
-        "max_hit": 95
-    },
-    "dodge_chance": {
-        "base_dodge": 10,
-        "min_dodge": 5,
-        "max_dodge": 50
-    },
-    "critical_chance": {
-        "base_crit": 5,
-        "min_crit": 1,
-        "max_crit": 25
-    },
-    "block_chance": {
-        "base_block": 15,
-        "min_block": 5,
-        "max_block": 40
-    }
+    "physical_damage": {"base_damage": 5, "stat_multiplier": 0.5},
+    "magical_damage": {"base_damage": 3, "stat_multiplier": 0.7},
+    "hit_chance": {"base_hit": 75, "min_hit": 10, "max_hit": 95},
+    "dodge_chance": {"base_dodge": 10, "min_dodge": 5, "max_dodge": 50},
+    "critical_chance": {"base_crit": 5, "min_crit": 1, "max_crit": 25},
+    "block_chance": {"base_block": 15, "min_block": 5, "max_block": 40},
 }
 
-CRITICAL_MULTIPLIERS = {
-    "normal": 1.0,
-    "critical": 2.0,
-    "glancing": 0.5,
-    "miss": 0.0
-}
+CRITICAL_MULTIPLIERS = {"normal": 1.0, "critical": 2.0, "glancing": 0.5, "miss": 0.0}
 
 # Export all constants for easy access
 __all__ = [

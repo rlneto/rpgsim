@@ -4,24 +4,23 @@ Optimized for LLM agents with explicit, deterministic combat calculations
 """
 
 import random
-import time
-from typing import Dict, List, Any, Optional, Tuple, Union
+from dataclasses import dataclass
+from typing import Dict, List, Any, Optional, Union
 from core.models import (
-    Character, CharacterClass, CharacterStats,
-    Enemy, EnemyType,
-    Item, ItemRarity, ItemType
+    Character,
+    CharacterClass,
+    CharacterStats,
+    Enemy,
+    Item,
+    ItemRarity,
+    ItemType,
 )
-from core.validation import (
-    ValidationError,
-    validate_combat_execution,
-    validate_damage_calculation
-)
+from core.validation import ValidationError, validate_combat_execution
 from core.constants import (
-    GAME_CONFIG,
     DAMAGE_MULTIPLIERS,
     COMBAT_CONFIG,
     COMBAT_FORMULAS,
-    CRITICAL_MULTIPLIERS
+    CRITICAL_MULTIPLIERS,
 )
 
 
@@ -35,16 +34,23 @@ def _get_stats_obj(character_or_enemy: Union[Character, Enemy]) -> Any:
     Returns:
         Object with .dexterity, .strength, etc. attributes
     """
-    raw_stats = getattr(character_or_enemy, 'stats', {
-        'strength': 10, 'dexterity': 10, 'intelligence': 10,
-        'wisdom': 10, 'charisma': 10, 'constitution': 10
-    })
+    raw_stats = getattr(
+        character_or_enemy,
+        "stats",
+        {
+            "strength": 10,
+            "dexterity": 10,
+            "intelligence": 10,
+            "wisdom": 10,
+            "charisma": 10,
+            "constitution": 10,
+        },
+    )
 
     if isinstance(raw_stats, dict):
         # Convert dict to object with attributes
-        return type('Stats', (), raw_stats)()
-    else:
-        return raw_stats
+        return type("Stats", (), raw_stats)()
+    return raw_stats
 
 
 def calculate_damage(
@@ -52,7 +58,7 @@ def calculate_damage(
     defender: Union[Character, Enemy],
     weapon: Optional[Item] = None,
     ability: Optional[str] = None,
-    damage_type: str = "physical"
+    damage_type: str = "physical",
 ) -> Dict[str, Any]:
     """
     Calculate damage for attack with explicit formula for agents.
@@ -93,7 +99,10 @@ def calculate_damage(
     # Calculate base damage
     if damage_type == "physical":
         base_damage = COMBAT_FORMULAS["physical_damage"]["base_damage"]
-        stat_bonus = attacker_stats.strength * COMBAT_FORMULAS["physical_damage"]["stat_multiplier"]
+        stat_bonus = (
+            attacker_stats.strength
+            * COMBAT_FORMULAS["physical_damage"]["stat_multiplier"]
+        )
         weapon_bonus = 0
 
         if weapon and weapon.is_equipment():
@@ -107,8 +116,10 @@ def calculate_damage(
 
     elif damage_type in ["fire", "ice", "lightning", "holy", "dark"]:
         base_damage = COMBAT_FORMULAS["magical_damage"]["base_damage"]
-        stat_bonus = (attacker_stats.intelligence *
-                     COMBAT_FORMULAS["magical_damage"]["stat_multiplier"])
+        stat_bonus = (
+            attacker_stats.intelligence
+            * COMBAT_FORMULAS["magical_damage"]["stat_multiplier"]
+        )
 
         if isinstance(attacker, Character):
             class_multiplier = DAMAGE_MULTIPLIERS[attacker.class_type.value]
@@ -126,7 +137,7 @@ def calculate_damage(
 
     # Apply damage modifiers
     damage_modifiers = _get_damage_modifiers(attacker, defender, weapon, ability)
-    modified_damage = raw_damage * damage_modifiers['total_multiplier']
+    modified_damage = raw_damage * damage_modifiers["total_multiplier"]
 
     # Calculate hit chance
     hit_chance = calculate_hit_chance(attacker, defender)
@@ -160,24 +171,25 @@ def calculate_damage(
     final_damage = int(final_damage)
 
     return {
-        'damage': final_damage,
-        'raw_damage': raw_damage,
-        'modified_damage': int(modified_damage),
-        'damage_type': damage_type,
-        'hit': is_hit,
-        'critical_hit': is_critical,
-        'critical_type': critical_type,
-        'critical_multiplier': CRITICAL_MULTIPLIERS.get(critical_type, 2.0) if is_critical else 1.0,
-        'hit_chance': hit_chance,
-        'critical_chance': critical_chance,
-        'damage_reduction': damage_reduction,
-        'damage_modifiers': damage_modifiers
+        "damage": final_damage,
+        "raw_damage": raw_damage,
+        "modified_damage": int(modified_damage),
+        "damage_type": damage_type,
+        "hit": is_hit,
+        "critical_hit": is_critical,
+        "critical_type": critical_type,
+        "critical_multiplier": CRITICAL_MULTIPLIERS.get(critical_type, 2.0)
+        if is_critical
+        else 1.0,
+        "hit_chance": hit_chance,
+        "critical_chance": critical_chance,
+        "damage_reduction": damage_reduction,
+        "damage_modifiers": damage_modifiers,
     }
 
 
 def calculate_hit_chance(
-    attacker: Union[Character, Enemy],
-    defender: Union[Character, Enemy]
+    attacker: Union[Character, Enemy], defender: Union[Character, Enemy]
 ) -> int:
     """
     Calculate hit chance with explicit formula for agents.
@@ -208,8 +220,8 @@ def calculate_hit_chance(
     dex_modifier = dex_diff // 2
 
     # Level modifier
-    attacker_level = getattr(attacker, 'level', 1)
-    defender_level = getattr(defender, 'level', 1)
+    attacker_level = getattr(attacker, "level", 1)
+    defender_level = getattr(defender, "level", 1)
     level_diff = attacker_level - defender_level
     level_modifier = level_diff // 5
 
@@ -225,7 +237,7 @@ def calculate_hit_chance(
 
 def calculate_critical_chance(
     attacker: Union[Character, Enemy],
-    _defender: Union[Character, Enemy]  # Unused parameter for interface consistency
+    _defender: Union[Character, Enemy],  # Unused parameter for interface consistency
 ) -> int:
     """
     Calculate critical chance with explicit formula for agents.
@@ -254,7 +266,7 @@ def calculate_critical_chance(
     dex_modifier = max(0, (attacker_stats.dexterity - 10) // 4)
 
     # Level modifier
-    attacker_level = getattr(attacker, 'level', 1)
+    attacker_level = getattr(attacker, "level", 1)
     level_modifier = attacker_level // 10
 
     # Class modifier
@@ -267,15 +279,18 @@ def calculate_critical_chance(
     critical_chance = base_crit + dex_modifier + level_modifier + class_modifier
 
     # Apply bounds
-    critical_chance = max(COMBAT_FORMULAS["critical_chance"]["min_crit"], critical_chance)
-    critical_chance = min(COMBAT_FORMULAS["critical_chance"]["max_crit"], critical_chance)
+    critical_chance = max(
+        COMBAT_FORMULAS["critical_chance"]["min_crit"], critical_chance
+    )
+    critical_chance = min(
+        COMBAT_FORMULAS["critical_chance"]["max_crit"], critical_chance
+    )
 
     return int(critical_chance)
 
 
 def calculate_dodge_chance(
-    defender: Union[Character, Enemy],
-    attacker: Union[Character, Enemy]
+    defender: Union[Character, Enemy], attacker: Union[Character, Enemy]
 ) -> int:
     """
     Calculate dodge chance with explicit formula for agents.
@@ -306,7 +321,7 @@ def calculate_dodge_chance(
     dex_modifier = dex_diff // 3
 
     # Level modifier
-    defender_level = getattr(defender, 'level', 1)
+    defender_level = getattr(defender, "level", 1)
     level_modifier = defender_level // 8
 
     # Calculate total dodge chance
@@ -321,7 +336,7 @@ def calculate_dodge_chance(
 
 def calculate_block_chance(
     defender: Union[Character, Enemy],
-    _attacker: Union[Character, Enemy]  # Unused parameter for interface consistency
+    _attacker: Union[Character, Enemy],  # Unused parameter for interface consistency
 ) -> int:
     """
     Calculate block chance with explicit formula for agents.
@@ -341,8 +356,18 @@ def calculate_block_chance(
         True
     """
     # Get stats
-    defender_stats = getattr(defender, 'stats', CharacterStats(strength=10, dexterity=10,
-        intelligence=10, wisdom=10, charisma=10, constitution=10))
+    defender_stats = getattr(
+        defender,
+        "stats",
+        CharacterStats(
+            strength=10,
+            dexterity=10,
+            intelligence=10,
+            wisdom=10,
+            charisma=10,
+            constitution=10,
+        ),
+    )
 
     # Base block chance
     base_block = COMBAT_FORMULAS["block_chance"]["base_block"]
@@ -351,7 +376,7 @@ def calculate_block_chance(
     str_modifier = defender_stats.strength // 5
 
     # Level modifier
-    defender_level = getattr(defender, 'level', 1)
+    defender_level = getattr(defender, "level", 1)
     level_modifier = defender_level // 10
 
     # Shield modifier (if has shield)
@@ -373,7 +398,7 @@ def simulate_combat_round(
     defender: Union[Character, Enemy],
     weapon: Optional[Item] = None,
     ability: Optional[str] = None,
-    damage_type: str = "physical"
+    damage_type: str = "physical",
 ) -> Dict[str, Any]:
     """
     Simulate a single combat round with explicit logic for agents.
@@ -410,31 +435,32 @@ def simulate_combat_round(
 
     if is_dodged:
         return {
-            'round_number': 1,
-            'attacker': {
-                'name': getattr(attacker, 'name', 'Unknown'),
-                'level': getattr(attacker, 'level', 1),
-                'hp': getattr(attacker, 'hp', 0),
-                'max_hp': getattr(attacker, 'max_hp', 0)
+            "round_number": 1,
+            "attacker": {
+                "name": getattr(attacker, "name", "Unknown"),
+                "level": getattr(attacker, "level", 1),
+                "hp": getattr(attacker, "hp", 0),
+                "max_hp": getattr(attacker, "max_hp", 0),
             },
-            'defender': {
-                'name': getattr(defender, 'name', 'Unknown'),
-                'level': getattr(defender, 'level', 1),
-                'hp': getattr(defender, 'hp', 0),
-                'max_hp': getattr(defender, 'max_hp', 0)
+            "defender": {
+                "name": getattr(defender, "name", "Unknown"),
+                "level": getattr(defender, "level", 1),
+                "hp": getattr(defender, "hp", 0),
+                "max_hp": getattr(defender, "max_hp", 0),
             },
-            'hit': False,
-            'dodged': True,
-            'blocked': False,
-            'damage': 0,
-            'damage_type': damage_type,
-            'critical_hit': False,
-            'weapon': getattr(weapon, 'name', None) if weapon else None,
-            'ability': ability,
-            'dodge_chance': dodge_chance,
-            'dodge_roll': dodge_roll,
-            'message': f"{getattr(attacker, 'name', 'Unknown')} attacks but {getattr(defender,
-        'name', 'Unknown')} dodges!"
+            "hit": False,
+            "dodged": True,
+            "blocked": False,
+            "damage": 0,
+            "damage_type": damage_type,
+            "critical_hit": False,
+            "weapon": getattr(weapon, "name", None) if weapon else None,
+            "ability": ability,
+            "dodge_chance": dodge_chance,
+            "dodge_roll": dodge_roll,
+            "message": f"{getattr(attacker, 'name', 'Unknown')} attacks but {
+                getattr(defender, 'name', 'Unknown')
+            } dodges!",
         }
 
     # Calculate block chance
@@ -446,57 +472,63 @@ def simulate_combat_round(
     damage_result = calculate_damage(attacker, defender, weapon, ability, damage_type)
 
     # Apply block reduction if blocked
-    final_damage = damage_result['damage']
+    final_damage = damage_result["damage"]
     if is_blocked:
         block_reduction = 0.5  # Block reduces damage by 50%
         final_damage = int(final_damage * block_reduction)
 
     # Apply damage to defender
-    old_hp = getattr(defender, 'hp', 0)
+    old_hp = getattr(defender, "hp", 0)
     final_hp = max(0, old_hp - final_damage)
 
     # Update defender's HP
-    if hasattr(defender, 'hp'):
+    if hasattr(defender, "hp"):
         defender.hp = final_hp
 
     return {
-        'round_number': 1,
-        'attacker': {
-            'name': getattr(attacker, 'name', 'Unknown'),
-            'level': getattr(attacker, 'level', 1),
-            'hp': getattr(attacker, 'hp', 0),
-            'max_hp': getattr(attacker, 'max_hp', 0)
+        "round_number": 1,
+        "attacker": {
+            "name": getattr(attacker, "name", "Unknown"),
+            "level": getattr(attacker, "level", 1),
+            "hp": getattr(attacker, "hp", 0),
+            "max_hp": getattr(attacker, "max_hp", 0),
         },
-        'defender': {
-            'name': getattr(defender, 'name', 'Unknown'),
-            'level': getattr(defender, 'level', 1),
-            'hp': final_hp,
-            'max_hp': getattr(defender, 'max_hp', 0)
+        "defender": {
+            "name": getattr(defender, "name", "Unknown"),
+            "level": getattr(defender, "level", 1),
+            "hp": final_hp,
+            "max_hp": getattr(defender, "max_hp", 0),
         },
-        'hit': damage_result['hit'],
-        'dodged': False,
-        'blocked': is_blocked,
-        'damage': final_damage,
-        'damage_type': damage_type,
-        'critical_hit': damage_result['critical_hit'],
-        'weapon': getattr(weapon, 'name', None) if weapon else None,
-        'ability': ability,
-        'hit_chance': damage_result['hit_chance'],
-        'block_chance': block_chance,
-        'block_roll': block_roll,
-        'dodge_chance': dodge_chance,
-        'dodge_roll': dodge_roll,
-        'old_hp': old_hp,
-        'new_hp': final_hp,
-        'hp_change': old_hp - final_hp,
-        'message': _generate_combat_message(attacker, defender, final_damage, is_blocked,
-        damage_result['critical_hit'], is_dodged)
+        "hit": damage_result["hit"],
+        "dodged": False,
+        "blocked": is_blocked,
+        "damage": final_damage,
+        "damage_type": damage_type,
+        "critical_hit": damage_result["critical_hit"],
+        "weapon": getattr(weapon, "name", None) if weapon else None,
+        "ability": ability,
+        "hit_chance": damage_result["hit_chance"],
+        "block_chance": block_chance,
+        "block_roll": block_roll,
+        "dodge_chance": dodge_chance,
+        "dodge_roll": dodge_roll,
+        "old_hp": old_hp,
+        "new_hp": final_hp,
+        "hp_change": old_hp - final_hp,
+        "message": _generate_combat_message(
+            CombatMessageParams(
+                attacker=attacker,
+                defender=defender,
+                damage=final_damage,
+                blocked=is_blocked,
+                critical=damage_result["critical_hit"],
+                dodged=is_dodged,
+            )
+        ),
     }
 
 
-def resolve_combat_round(
-    combat_round: Dict[str, Any]
-) -> Dict[str, Any]:
+def resolve_combat_round(combat_round: Dict[str, Any]) -> Dict[str, Any]:
     """
     Resolve combat round results and update combat state.
 
@@ -519,18 +551,18 @@ def resolve_combat_round(
         True
     """
     # Check if combat is over
-    defender_hp = combat_round['defender']['hp']
-    attacker_hp = combat_round['attacker']['hp']
+    defender_hp = combat_round["defender"]["hp"]
+    attacker_hp = combat_round["attacker"]["hp"]
 
     combat_over = defender_hp <= 0 or attacker_hp <= 0
 
     if combat_over:
-        if defender_hp <= 0 and attacker_hp > 0:
-            winner = combat_round['attacker']['name']
-            loser = combat_round['defender']['name']
-        elif attacker_hp <= 0 and defender_hp > 0:
-            winner = combat_round['defender']['name']
-            loser = combat_round['attacker']['name']
+        if defender_hp <= 0 < attacker_hp:
+            winner = combat_round["attacker"]["name"]
+            loser = combat_round["defender"]["name"]
+        elif attacker_hp <= 0 < defender_hp:
+            winner = combat_round["defender"]["name"]
+            loser = combat_round["attacker"]["name"]
         else:
             winner = "draw"
             loser = "draw"
@@ -540,21 +572,26 @@ def resolve_combat_round(
 
     return {
         **combat_round,
-        'combat_over': combat_over,
-        'winner': winner,
-        'loser': loser,
-        'damage_dealt': combat_round['damage'],
-        'damage_received': combat_round['damage'],
-        'attacker_remaining_hp': combat_round['attacker']['hp'],
-        'defender_remaining_hp': combat_round['defender']['hp'],
-        'attacker_hp_percentage': (combat_round['attacker']['hp'] / combat_round['attacker']['max_hp']) * 100,
-        'defender_hp_percentage': (combat_round['defender']['hp'] / combat_round['defender']['max_hp']) * 100
+        "combat_over": combat_over,
+        "winner": winner,
+        "loser": loser,
+        "damage_dealt": combat_round["damage"],
+        "damage_received": combat_round["damage"],
+        "attacker_remaining_hp": combat_round["attacker"]["hp"],
+        "defender_remaining_hp": combat_round["defender"]["hp"],
+        "attacker_hp_percentage": (
+            combat_round["attacker"]["hp"] / combat_round["attacker"]["max_hp"]
+        )
+        * 100,
+        "defender_hp_percentage": (
+            combat_round["defender"]["hp"] / combat_round["defender"]["max_hp"]
+        )
+        * 100,
     }
 
 
 def calculate_combat_outcome(
-    participants: List[Union[Character, Enemy]],
-    max_rounds: int = 50
+    participants: List[Union[Character, Enemy]], max_rounds: int = 50
 ) -> Dict[str, Any]:
     """
     Calculate complete combat outcome with explicit simulation for agents.
@@ -578,8 +615,11 @@ def calculate_combat_outcome(
         True
     """
     if len(participants) < 2:
-        raise ValidationError("Combat requires at least 2 participants", field='participants',
-        value=participants)
+        raise ValidationError(
+            "Combat requires at least 2 participants",
+            field="participants",
+            value=participants,
+        )
 
     # Initialize combat state
     combat_log = []
@@ -596,14 +636,14 @@ def calculate_combat_outcome(
         defender = participants[1]
 
         # Check if participants can fight
-        if not getattr(attacker, 'is_alive', lambda: True)():
+        if not getattr(attacker, "is_alive", lambda: True)():
             combat_over = True
-            winner = getattr(participants[1], 'name', 'Unknown')
+            winner = getattr(participants[1], "name", "Unknown")
             break
 
-        if not getattr(defender, 'is_alive', lambda: True)():
+        if not getattr(defender, "is_alive", lambda: True)():
             combat_over = True
-            winner = getattr(participants[0], 'name', 'Unknown')
+            winner = getattr(participants[0], "name", "Unknown")
             break
 
         # Simulate combat round
@@ -614,9 +654,9 @@ def calculate_combat_outcome(
         combat_log.append(resolved_round)
 
         # Check if combat is over
-        combat_over = resolved_round['combat_over']
+        combat_over = resolved_round["combat_over"]
         if combat_over:
-            winner = resolved_round['winner']
+            winner = resolved_round["winner"]
 
         # Switch participants for next round (simple alternating)
         participants = [participants[1], participants[0]]
@@ -632,30 +672,33 @@ def calculate_combat_outcome(
         winner = "draw"
 
     # Calculate combat statistics
-    total_damage = sum(round_result['damage_dealt'] for round_result in combat_log)
-    total_hits = sum(1 for round_result in combat_log if round_result['hit'])
-    total_criticals = sum(1 for round_result in combat_log if round_result['critical_hit'])
+    total_damage = sum(round_result["damage_dealt"] for round_result in combat_log)
+    total_hits = sum(1 for round_result in combat_log if round_result["hit"])
+    total_criticals = sum(
+        1 for round_result in combat_log if round_result["critical_hit"]
+    )
 
     return {
-        'outcome': outcome,
-        'winner': winner,
-        'total_rounds': current_round,
-        'total_damage': total_damage,
-        'total_hits': total_hits,
-        'total_criticals': total_criticals,
-        'hit_rate': (total_hits / current_round * 100) if current_round > 0 else 0,
-        'critical_rate': (total_criticals / total_hits * 100) if total_hits > 0 else 0,
-        'average_damage': total_damage / total_hits if total_hits > 0 else 0,
-        'combat_log': combat_log,
-        'participants': [
+        "outcome": outcome,
+        "winner": winner,
+        "total_rounds": current_round,
+        "total_damage": total_damage,
+        "total_hits": total_hits,
+        "total_criticals": total_criticals,
+        "hit_rate": (total_hits / current_round * 100) if current_round > 0 else 0,
+        "critical_rate": (total_criticals / total_hits * 100) if total_hits > 0 else 0,
+        "average_damage": total_damage / total_hits if total_hits > 0 else 0,
+        "combat_log": combat_log,
+        "participants": [
             {
-                'name': getattr(p, 'name', 'Unknown'),
-                'level': getattr(p, 'level', 1),
-                'hp': getattr(p, 'hp', 0),
-                'max_hp': getattr(p, 'max_hp', 0),
-                'is_alive': getattr(p, 'is_alive', lambda: True)()
-            } for p in participants
-        ]
+                "name": getattr(p, "name", "Unknown"),
+                "level": getattr(p, "level", 1),
+                "hp": getattr(p, "hp", 0),
+                "max_hp": getattr(p, "max_hp", 0),
+                "is_alive": getattr(p, "is_alive", lambda: True)(),
+            }
+            for p in participants
+        ],
     }
 
 
@@ -672,7 +715,7 @@ def _get_ability_damage_bonus(ability: str) -> int:
         "Precision Strike": 8,
         "Heavy Strike": 22,
         "Rapid Strike": 5,
-        "Deadly Strike": 30
+        "Deadly Strike": 30,
     }
     return ability_damage_bonus.get(ability, 0)
 
@@ -694,7 +737,7 @@ def _get_spell_damage_bonus(spell: str) -> int:
         "Divine Wrath": 38,
         "Demonic Fire": 45,
         "Nature's Wrath": 33,
-        "Mind Blast": 26
+        "Mind Blast": 26,
     }
     return spell_damage_bonus.get(spell, 0)
 
@@ -724,7 +767,7 @@ def _get_class_critical_modifier(character_class: CharacterClass) -> int:
         CharacterClass.SUMMONER: 2,
         CharacterClass.SHAPESHIFTER: 1,
         CharacterClass.ELEMENTALIST: 3,
-        CharacterClass.NINJA: 7
+        CharacterClass.NINJA: 7,
     }
     return class_crit_bonus.get(character_class, 0)
 
@@ -734,9 +777,9 @@ def _get_shield_bonus(defender: Union[Character, Enemy]) -> int:
     if isinstance(defender, Character):
         # Check for shield in inventory
         for item in defender.inventory:
-            if hasattr(item, 'type') and item.type == ItemType.ARMOR:
-                if 'shield' in item.name.lower() or item.stats_mod.get('shield', 0) > 0:
-                    return item.stats_mod.get('defense', 0)
+            if hasattr(item, "type") and item.type == ItemType.ARMOR:
+                if "shield" in item.name.lower() or item.stats_mod.get("shield", 0) > 0:
+                    return item.stats_mod.get("defense", 0)
     return 0
 
 
@@ -744,62 +787,61 @@ def _get_damage_modifiers(
     attacker: Union[Character, Enemy],
     defender: Union[Character, Enemy],
     weapon: Optional[Item],
-    ability: Optional[str]
+    ability: Optional[str],
 ) -> Dict[str, Any]:
     """Get all damage modifiers."""
     modifiers = {
-        'level_advantage': 1.0,
-        'weapon_quality': 1.0,
-        'ability_bonus': 1.0,
-        'terrain_bonus': 1.0,
-        'weather_bonus': 1.0,
-        'total_multiplier': 1.0
+        "level_advantage": 1.0,
+        "weapon_quality": 1.0,
+        "ability_bonus": 1.0,
+        "terrain_bonus": 1.0,
+        "weather_bonus": 1.0,
+        "total_multiplier": 1.0,
     }
 
     # Level advantage modifier
-    attacker_level = getattr(attacker, 'level', 1)
-    defender_level = getattr(defender, 'level', 1)
+    attacker_level = getattr(attacker, "level", 1)
+    defender_level = getattr(defender, "level", 1)
 
     if attacker_level > defender_level:
         level_diff = attacker_level - defender_level
-        modifiers['level_advantage'] = 1.0 + (level_diff * 0.05)
+        modifiers["level_advantage"] = 1.0 + (level_diff * 0.05)
     elif attacker_level < defender_level:
         level_diff = defender_level - attacker_level
-        modifiers['level_advantage'] = 1.0 - (level_diff * 0.05)
+        modifiers["level_advantage"] = 1.0 - (level_diff * 0.05)
 
     # Weapon quality modifier
     if weapon:
         if weapon.rarity == ItemRarity.RARE:
-            modifiers['weapon_quality'] = 1.1
+            modifiers["weapon_quality"] = 1.1
         elif weapon.rarity == ItemRarity.EPIC:
-            modifiers['weapon_quality'] = 1.2
+            modifiers["weapon_quality"] = 1.2
         elif weapon.rarity == ItemRarity.LEGENDARY:
-            modifiers['weapon_quality'] = 1.3
+            modifiers["weapon_quality"] = 1.3
 
     # Ability bonus modifier
     if ability:
         if "Power" in ability:
-            modifiers['ability_bonus'] = 1.2
+            modifiers["ability_bonus"] = 1.2
         elif "Deadly" in ability:
-            modifiers['ability_bonus'] = 1.3
+            modifiers["ability_bonus"] = 1.3
         elif "Ultimate" in ability:
-            modifiers['ability_bonus'] = 1.5
+            modifiers["ability_bonus"] = 1.5
 
     # Calculate total multiplier
-    modifiers['total_multiplier'] = (
-        modifiers['level_advantage'] *
-        modifiers['weapon_quality'] *
-        modifiers['ability_bonus'] *
-        modifiers['terrain_bonus'] *
-        modifiers['weather_bonus']
+    modifiers["total_multiplier"] = (
+        modifiers["level_advantage"]
+        * modifiers["weapon_quality"]
+        * modifiers["ability_bonus"]
+        * modifiers["terrain_bonus"]
+        * modifiers["weather_bonus"]
     )
 
     return modifiers
 
 
 def _calculate_damage_reduction(
-    defender: Union[Character, Enemy],
-    damage_type: str
+    defender: Union[Character, Enemy], damage_type: str
 ) -> float:
     """Calculate damage reduction for defender."""
     base_reduction = 1.0
@@ -809,45 +851,52 @@ def _calculate_damage_reduction(
         base_reduction = COMBAT_CONFIG["armor_absorption"]
 
     # Magic resistance for magical damage
-    elif damage_type in ["fire", "ice", "lightning", "holy", "dark"]:
+    if damage_type in ["fire", "ice", "lightning", "holy", "dark"]:
         base_reduction = COMBAT_CONFIG["magic_absorption"]
 
     # Check for specific resistances
-    if hasattr(defender, 'resistances'):
+    if hasattr(defender, "resistances"):
         if damage_type in defender.resistances:
             base_reduction *= 0.5  # Additional 50% reduction
 
     return base_reduction
 
 
-def _generate_combat_message(
-    attacker: Union[Character, Enemy],
-    defender: Union[Character, Enemy],
-    damage: int,
-    blocked: bool,
-    critical: bool,
-    dodged: bool
-) -> str:
-    """Generate combat message for logging."""
-    attacker_name = getattr(attacker, 'name', 'Unknown')
-    defender_name = getattr(defender, 'name', 'Unknown')
+@dataclass
+class CombatMessageParams:
+    """Parameters for combat message generation"""
 
-    if dodged:
+    attacker: Union[Character, Enemy]
+    defender: Union[Character, Enemy]
+    damage: int
+    blocked: bool
+    critical: bool
+    dodged: bool
+
+
+def _generate_combat_message(params: CombatMessageParams) -> str:
+    """Generate combat message for logging."""
+    attacker_name = getattr(params.attacker, "name", "Unknown")
+    defender_name = getattr(params.defender, "name", "Unknown")
+
+    if params.dodged:
         return f"{attacker_name} attacks but {defender_name} dodges!"
 
-    if blocked:
-        return f"{attacker_name} attacks {defender_name} for {damage} damage (blocked)!"
+    if params.blocked:
+        return f"{attacker_name} attacks {defender_name} for {params.damage} damage (blocked)!"
 
-    if critical:
-        return f"{attacker_name} lands a CRITICAL hit on {defender_name} for {damage} damage!"
+    if params.critical:
+        crit_msg = f"{attacker_name} lands a CRITICAL hit on {defender_name}"
+        return f"{crit_msg} for {params.damage} damage!"
 
-    if damage > 0:
-        return f"{attacker_name} hits {defender_name} for {damage} damage!"
-    else:
-        return f"{attacker_name} attacks {defender_name} but deals no damage!"
+    if params.damage > 0:
+        return f"{attacker_name} hits {defender_name} for {params.damage} damage!"
+    return f"{attacker_name} attacks {defender_name} but deals no damage!"
 
 
-def resolve_combat(attacker: Union[Character, Enemy], defender: Union[Character, Enemy]) -> Dict[str, Any]:
+def resolve_combat(
+    attacker: Union[Character, Enemy], defender: Union[Character, Enemy]
+) -> Dict[str, Any]:
     """
     Resolve a complete combat between attacker and defender.
 
@@ -862,25 +911,25 @@ def resolve_combat(attacker: Union[Character, Enemy], defender: Union[Character,
     outcome = calculate_combat_outcome([attacker, defender])
 
     return {
-        'winner': outcome.get('winner'),
-        'loser': outcome.get('loser'),
-        'total_rounds': outcome.get('total_rounds', 0),
-        'combat_log': outcome.get('combat_log', []),
-        'attacker_damage_dealt': outcome.get('damage_dealt', 0),
-        'defender_damage_dealt': outcome.get('damage_dealt', 0),
-        'is_draw': outcome.get('is_draw', False)
+        "winner": outcome.get("winner"),
+        "loser": outcome.get("loser"),
+        "total_rounds": outcome.get("total_rounds", 0),
+        "combat_log": outcome.get("combat_log", []),
+        "attacker_damage_dealt": outcome.get("damage_dealt", 0),
+        "defender_damage_dealt": outcome.get("damage_dealt", 0),
+        "is_draw": outcome.get("is_draw", False),
     }
 
 
 # Export all functions for easy access
 __all__ = [
-    'calculate_damage',
-    'calculate_hit_chance',
-    'calculate_critical_chance',
-    'calculate_dodge_chance',
-    'calculate_block_chance',
-    'simulate_combat_round',
-    'resolve_combat_round',
-    'calculate_combat_outcome',
-    'resolve_combat'
+    "calculate_damage",
+    "calculate_hit_chance",
+    "calculate_critical_chance",
+    "calculate_dodge_chance",
+    "calculate_block_chance",
+    "simulate_combat_round",
+    "resolve_combat_round",
+    "calculate_combat_outcome",
+    "resolve_combat",
 ]
