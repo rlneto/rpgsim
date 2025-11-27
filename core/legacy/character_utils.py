@@ -124,6 +124,6 @@ def add_experience(character: Character, exp_amount: int) -> bool:
 __all__ = [
     'create_character',
     'level_up_character', 'add_experience', 'get_all_character_classes',
-    'get_class_balance_stats', 'validate_class_balance', 
+    'get_class_balance_stats', 'validate_class_balance',
     'verify_unique_mechanics', 'verify_minimum_abilities'
 ]

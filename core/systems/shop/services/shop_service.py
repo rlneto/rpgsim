@@ -11,53 +11,53 @@ from .item_service import ItemGenerationService, ItemPricingService
 
 class ShopCreationService:
     """Service for shop creation logic"""
-    
+
     def __init__(self):
         self.item_service = ItemGenerationService()
-    
-    def create_shop(self, shop_id: str, name: str, shop_type: str, owner: str, 
+
+    def create_shop(self, shop_id: str, name: str, shop_type: str, owner: str,
                    location: str, quality_level: str, gold_reserve: Optional[int] = None,
                    inventory_size: Optional[int] = None) -> Optional[Shop]:
         """Create a new shop with validation"""
-        
+
         # Convert enum inputs to strings if needed
         shop_type_str = shop_type.value if hasattr(shop_type, 'value') else shop_type
         quality_level_str = quality_level.value if hasattr(quality_level, 'value') else quality_level
-        
+
         # Validate inputs
         if not self._validate_shop_inputs(shop_id, name, shop_type_str, quality_level_str):
             return None
-        
+
         # Get configuration
         config = DEFAULT_SHOP_CONFIGS.get(shop_type_str, {
             "quality_level": ShopQuality.STANDARD.value,
             "initial_gold": 1000,
             "inventory_size": 25
         })
-        
+
         # Set default values
         if gold_reserve is None:
             gold_reserve = config["initial_gold"]
-        
+
         if inventory_size is None:
             inventory_size = config["inventory_size"]
-        
+
         # Validate numeric inputs
         if not self._validate_numeric_inputs(gold_reserve, inventory_size):
             return None
-        
+
         # Create inventory
         inventory = ShopInventory(max_size=inventory_size)
         initial_items = self.item_service.generate_inventory(shop_type_str, inventory_size)
         for item in initial_items:
             inventory.add_item(item)
-        
+
         # Create economy
         economy = ShopEconomy(
             gold_reserves=gold_reserve,
             quality_modifier=self._get_quality_modifier(quality_level_str)
         )
-        
+
         # Create shop
         shop = Shop(
             id=shop_id,
@@ -69,49 +69,49 @@ class ShopCreationService:
             inventory=inventory,
             economy=economy
         )
-        
+
         return shop
-    
+
     def _validate_shop_inputs(self, shop_id: str, name: str, shop_type: str, quality_level: str) -> bool:
         """Validate shop input parameters"""
         # Validate shop_id
         if not shop_id or len(shop_id.strip()) < 3:
             return False
-        
+
         # Validate name
         if not name or len(name.strip()) < 3 or len(name) > 50:
             return False
-        
+
         # Handle enum input for shop_type
         shop_type_str = shop_type
         if hasattr(shop_type, 'value'):
             shop_type_str = shop_type.value
-        
+
         # Validate shop_type
         if not ShopType.is_valid_type(shop_type_str):
             return False
-        
+
         # Handle enum input for quality_level
         quality_level_str = quality_level
         if hasattr(quality_level, 'value'):
             quality_level_str = quality_level.value
-        
+
         # Validate quality_level
         if not ShopQuality.is_valid_quality(quality_level_str):
             return False
-        
+
         return True
-    
+
     def _validate_numeric_inputs(self, gold_reserve: int, inventory_size: int) -> bool:
         """Validate numeric input parameters"""
         if gold_reserve < 100 or gold_reserve > 10000:
             return False
-        
+
         if inventory_size < 10 or inventory_size > 50:
             return False
-        
+
         return True
-    
+
     def _get_quality_modifier(self, quality_level: str) -> float:
         """Get quality modifier for pricing"""
         modifiers = {
@@ -125,11 +125,11 @@ class ShopCreationService:
 
 class ShopTransactionService:
     """Service for shop transaction logic"""
-    
+
     def __init__(self):
         self.pricing_service = ItemPricingService()
-    
-    def process_buy_transaction(self, shop: Shop, item_id: str, character_gold: int, 
+
+    def process_buy_transaction(self, shop: Shop, item_id: str, character_gold: int,
                                character_reputation: int = 50) -> Dict[str, Any]:
         """Process buy transaction"""
         # Find item
@@ -140,12 +140,12 @@ class ShopTransactionService:
                 "reason": "Item not available",
                 "item": None
             }
-        
+
         # Calculate price
         final_price = self.pricing_service.calculate_buy_price(
             shop, item, character_reputation
         )
-        
+
         # Check if character can afford
         if character_gold < final_price:
             return {
@@ -155,7 +155,7 @@ class ShopTransactionService:
                 "available_gold": character_gold,
                 "item": None
             }
-        
+
         # Check if shop can afford
         if not shop.economy.can_afford(final_price):
             return {
@@ -163,17 +163,17 @@ class ShopTransactionService:
                 "reason": "Shop cannot afford to buy this item",
                 "item": None
             }
-        
+
         # Process transaction
         shop.economy.update_gold_reserves(-final_price)
         shop.inventory.remove_item(item_id)
-        
+
         # Create transaction record
         transaction = ShopTransaction.create_buy_transaction(
             item, 1, final_price, character_reputation
         )
         shop.add_transaction(transaction)
-        
+
         return {
             "success": True,
             "item": item.get_summary(),
@@ -182,8 +182,8 @@ class ShopTransactionService:
             "remaining_gold": character_gold - final_price,
             "shop_gold_remaining": shop.economy.gold_reserves
         }
-    
-    def process_sell_transaction(self, shop: Shop, item: ShopItem, 
+
+    def process_sell_transaction(self, shop: Shop, item: ShopItem,
                                 character_reputation: int = 50) -> Dict[str, Any]:
         """Process sell transaction"""
         # Check if shop can buy this item type
@@ -194,12 +194,12 @@ class ShopTransactionService:
                 "gold_received": 0,
                 "item_sold": None
             }
-        
+
         # Calculate offer
         final_offer = self.pricing_service.calculate_sell_price(
             shop, item, character_reputation
         )
-        
+
         # Check if shop can afford
         if not shop.economy.can_afford(final_offer):
             return {
@@ -208,19 +208,19 @@ class ShopTransactionService:
                 "gold_received": 0,
                 "item_sold": None
             }
-        
+
         # Process transaction
         shop.economy.update_gold_reserves(-final_offer)
-        
+
         # Add to inventory if space available
         item_added = shop.inventory.add_item(item)
-        
+
         # Create transaction record
         transaction = ShopTransaction.create_sell_transaction(
             item, 1, final_offer, character_reputation
         )
         shop.add_transaction(transaction)
-        
+
         return {
             "success": True,
             "item_sold": item.get_summary(),
@@ -233,21 +233,21 @@ class ShopTransactionService:
 
 class ShopInventoryService:
     """Service for shop inventory management"""
-    
+
     def __init__(self):
         self.item_service = ItemGenerationService()
-    
+
     def refresh_inventory(self, shop: Shop, current_day: int) -> Dict[str, Any]:
         """Refresh shop inventory"""
         # Generate new items
         new_items = self.item_service.generate_inventory(
             shop.shop_type, shop.inventory.max_size
         )
-        
+
         # Refresh inventory
         items_added = shop.inventory.refresh(new_items)
         shop.restock_timer = 0
-        
+
         return {
             "success": True,
             "items_added": items_added,
@@ -255,29 +255,29 @@ class ShopInventoryService:
             "max_inventory_size": shop.inventory.max_size,
             "refresh_day": current_day
         }
-    
+
     def restock_shop(self, shop: Shop, items: Optional[List[ShopItem]] = None) -> Dict[str, Any]:
         """Restock shop with specific items or auto-generate"""
         if items is None:
             # Auto-restock based on shop type
             items = self.item_service.generate_inventory(shop.shop_type, shop.inventory.max_size)
-        
+
         # Add items to inventory
         added_count = 0
         for item in items:
             if shop.inventory.add_item(item):
                 added_count += 1
-        
+
         # Reset restock timer
         shop.restock_timer = 0
-        
+
         return {
             "success": True,
             "items_added": added_count,
             "current_inventory_size": shop.inventory.current_size,
             "max_inventory_size": shop.inventory.max_size
         }
-    
+
     def get_inventory_summary(self, shop: Shop) -> Dict[str, Any]:
         """Get comprehensive inventory summary"""
         return {
@@ -299,8 +299,8 @@ class ShopInventoryService:
 
 class ShopEconomyService:
     """Service for shop economic management"""
-    
-    def update_shop_economy(self, shop: Shop, economic_change: int, 
+
+    def update_shop_economy(self, shop: Shop, economic_change: int,
                            location_wealth_change: int = 0) -> Dict[str, Any]:
         """Update shop economy based on transactions"""
         # Validate economic change
@@ -309,22 +309,22 @@ class ShopEconomyService:
                 "success": False,
                 "reason": "Economic change must be between -1000 and 1000"
             }
-        
+
         old_gold = shop.economy.gold_reserves
-        
+
         # Update gold reserve
         shop.economy.update_gold_reserves(economic_change)
-        
+
         # Update price modifier based on location wealth
         if location_wealth_change != 0:
             wealth_factor = 1.0 + (location_wealth_change * 0.05)
             shop.economy.price_modifier = max(
                 0.5, min(2.0, shop.economy.price_modifier * wealth_factor)
             )
-        
+
         # Update restock timer
         shop.restock_timer = max(0, shop.restock_timer - 1)
-        
+
         return {
             "success": True,
             "old_gold_reserve": old_gold,
@@ -333,22 +333,22 @@ class ShopEconomyService:
             "price_modifier": shop.economy.price_modifier,
             "restock_timer": shop.restock_timer
         }
-    
+
     def get_economic_analysis(self, shop: Shop) -> Dict[str, Any]:
         """Get detailed economic analysis"""
         # Analyze recent transactions
         recent_transactions = shop.customer_history[-20:]  # Last 20 transactions
-        
+
         buy_count = sum(1 for t in recent_transactions if t.transaction_type == "buy")
         sell_count = sum(1 for t in recent_transactions if t.transaction_type == "sell")
-        
+
         total_buy_value = sum(t.total_price for t in recent_transactions if t.transaction_type == "buy")
         total_sell_value = sum(t.total_price for t in recent_transactions if t.transaction_type == "sell")
-        
+
         # Calculate metrics
         transaction_ratio = buy_count / max(1, (buy_count + sell_count))
         profit_margin = (total_buy_value - total_sell_value) / max(1, total_buy_value) if total_buy_value > 0 else 0
-        
+
         return {
             "current_gold": shop.economy.gold_reserves,
             "price_modifier": shop.economy.price_modifier,
@@ -361,7 +361,7 @@ class ShopEconomyService:
             "profit_margin": profit_margin,
             "economic_health": self._assess_economic_health(shop, profit_margin)
         }
-    
+
     def _assess_economic_health(self, shop: Shop, profit_margin: float) -> str:
         """Assess shop economic health"""
         if shop.economy.gold_reserves < 500:
@@ -378,13 +378,13 @@ class ShopEconomyService:
 
 class ShopManagementService:
     """Service for comprehensive shop management"""
-    
+
     def __init__(self):
         self.creation_service = ShopCreationService()
         self.transaction_service = ShopTransactionService()
         self.inventory_service = ShopInventoryService()
         self.economy_service = ShopEconomyService()
-    
+
     def get_shop_overview(self, shop: Shop) -> Dict[str, Any]:
         """Get complete shop overview"""
         return {
@@ -402,7 +402,7 @@ class ShopManagementService:
                 for t in shop.customer_history[-10:]
             ]
         }
-    
+
     def update_reputation_discounts(self, shop: Shop, discount_config: Dict[str, float]) -> bool:
         """Update reputation discount configuration"""
         try:
@@ -410,7 +410,7 @@ class ShopManagementService:
             return True
         except Exception:
             return False
-    
+
     def get_shop_statistics(self, shop: Shop) -> Dict[str, Any]:
         """Get comprehensive shop statistics"""
         return {

@@ -3,7 +3,7 @@ World system module - provides modular world management
 """
 
 from .domain.world import (
-    World, Location, TravelConnection, TravelRequirement, 
+    World, Location, TravelConnection, TravelRequirement,
     LocationType, TravelRequirementType, Coordinates, DEFAULT_WORLD_CONFIG
 )
 
@@ -25,16 +25,16 @@ __all__ = [
     # Domain entities
     'World', 'Location', 'TravelConnection', 'TravelRequirement',
     'LocationType', 'TravelRequirementType', 'Coordinates', 'DEFAULT_WORLD_CONFIG',
-    
+
     # Services
     'WorldService', 'TravelService', 'TravelRoute', 'LocationService',
-    
+
     # Repositories
     'MemoryWorldRepository', 'MemoryLocationRepository', 'MemoryTravelConnectionRepository',
-    
+
     # Interfaces
     'WorldRepository', 'LocationRepository', 'TravelConnectionRepository',
-    
+
     # Facade
     'WorldSystem'
 ]

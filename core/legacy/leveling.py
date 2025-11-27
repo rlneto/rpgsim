@@ -243,27 +243,27 @@ def level_up(character: Character) -> Character:
     """
     # Calculate new level
     new_level = character.level + 1
-    
+
     # Validate level requirements
     validate_level_requirements(character, new_level)
-    
+
     # Calculate level up bonuses
     bonuses = calculate_level_up_bonuses(character, new_level)
-    
+
     # Update character with bonuses
     character.level = new_level
     character.max_hp = bonuses['new_max_hp']
     character.hp = character.max_hp  # Full heal on level up
-    
+
     # Apply stat increases
     for stat, increase in bonuses['stat_increases'].items():
         if hasattr(character.stats, stat):
-            setattr(character.stats, stat, 
+            setattr(character.stats, stat,
                     getattr(character.stats, stat) + increase)
-    
+
     # Unlock new abilities
     unlock_abilities_at_level(character, new_level)
-    
+
     return character
 
 

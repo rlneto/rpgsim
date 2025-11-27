@@ -118,7 +118,7 @@ def calculate_stat_modifiers(stats: CharacterStats) -> Dict[str, int]:
         Dict[str, int]: Stat modifiers
 
     Examples:
-    
+
     >>> stats = CharacterStats(strength=15, dexterity=10, intelligence=8,
         ...                      wisdom=10, charisma=8, constitution=14)
         >>> modifiers = calculate_stat_modifiers(stats)
@@ -149,7 +149,7 @@ def calculate_leveling_stats(
         CharacterStats: Stats at target level
 
     Examples:
-    
+
     >>> base_stats = CharacterStats(strength=15, dexterity=10, intelligence=8,
         ...                          wisdom=10, charisma=8, constitution=14)
         >>> leveled_stats = calculate_leveling_stats(base_stats, CharacterClass.WARRIOR, 2)
@@ -321,12 +321,12 @@ def validate_stat_ranges(stats: CharacterStats) -> bool:
         ValidationError: If any stat is out of range
 
     Examples:
-    
+
     >>> valid_stats = CharacterStats(strength=10, dexterity=10, intelligence=10,
         ...                         wisdom=10, charisma=10, constitution=10)
         >>> validate_stat_ranges(valid_stats)
         True
-    
+
     >>> invalid_stats = CharacterStats(strength=25, dexterity=10, intelligence=10,
         ...                         wisdom=10, charisma=10, constitution=10)
         >>> validate_stat_ranges(invalid_stats)
@@ -393,7 +393,7 @@ def apply_stat_bonuses(
         ValidationError: If bonuses are invalid
 
     Examples:
-    
+
     >>> base_stats = CharacterStats(strength=10, dexterity=10, intelligence=10,
         ...                         wisdom=10, charisma=10, constitution=10)
         >>> bonuses = {'strength': 2, 'constitution': 1}
@@ -452,7 +452,7 @@ def calculate_effective_stats(
         CharacterStats: Effective stats with item bonuses
 
     Examples:
-    
+
     >>> base_stats = CharacterStats(strength=10, dexterity=10, intelligence=10,
         ...                         wisdom=10, charisma=10, constitution=10)
         >>> from core.models import Item, ItemType, ItemRarity
@@ -495,7 +495,7 @@ def get_stat_comparative_ranking(
         Dict[str, str]: Ranking for each stat
 
     Examples:
-    
+
     >>> character_stats = CharacterStats(strength=15, dexterity=10, intelligence=10,
         ...                              wisdom=10, charisma=10, constitution=14)
         >>> ranking = get_stat_comparative_ranking(character_stats, CharacterClass.WARRIOR)

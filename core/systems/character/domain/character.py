@@ -43,25 +43,25 @@ class CharacterStats:
     wisdom: int = 10
     charisma: int = 10
     constitution: int = 10
-    
+
     def total_power(self) -> int:
         """Calculate total power level"""
         return (
             self.strength + self.dexterity + self.intelligence +
             self.wisdom + self.charisma + self.constitution
         )
-    
+
     def primary_stat_value(self, primary_stat: str) -> int:
         """Get value of primary stat"""
         return getattr(self, primary_stat, 10)
-    
+
     def get_strengths(self) -> List[str]:
         """Get list of character's strong stats (15+ points)"""
         return [
             stat for stat, value in self.__dict__.items()
             if isinstance(value, int) and value >= 15
         ]
-    
+
     def get_weaknesses(self) -> List[str]:
         """Get list of character's weak stats (12- points)"""
         return [
@@ -77,7 +77,7 @@ class CharacterClassConfig:
     base_stats: 'CharacterStats'
     primary_stat: str
     abilities: List[str] = field(default_factory=list)
-    
+
     def __post_init__(self):
         """Validate configuration after creation"""
         if self.primary_stat not in self.base_stats.__dict__:
@@ -100,18 +100,18 @@ class Character:
     abilities: List[str] = field(default_factory=list)
     created: bool = False
     visual_customization: Dict[str, str] = field(default_factory=dict)
-    
+
     def is_alive(self) -> bool:
         """Check if character is alive"""
         return self.created and self.hp > 0
-    
+
     def add_to_inventory(self, item: str) -> bool:
         """Add item to inventory with validation"""
         if not item or not item.strip():
             return False
         self.inventory.append(item.strip())
         return True
-    
+
     def remove_from_inventory(self, item: str) -> bool:
         """Remove item from inventory"""
         try:
@@ -119,33 +119,33 @@ class Character:
             return True
         except ValueError:
             return False
-    
+
     def level_up(self) -> bool:
         """Level up character with stat improvements"""
         if not self.created or self.level < 1:
             return False
-            
+
         self.level += 1
-        
+
         # Improve primary stat
         if self.class_type:
             primary_stat_value = self.stats.primary_stat_value(
                 CHARACTER_CLASSES[self.class_type].primary_stat
             )
             primary_stat_value += 1
-            
+
         return True
-    
+
     def calculate_power_level(self) -> int:
         """Calculate character's total power level"""
         return self.stats.total_power()
-    
+
     def __post_init__(self):
         """Post-initialization for dataclass"""
         # Set HP to 0 if not created
         if not self.created:
             self.hp = 0
-    
+
     # BDD compatibility methods
     def get_class_stats(self, class_name: str) -> Optional[Dict]:
         """Get stats for specific class (BDD compatibility)"""
@@ -164,7 +164,7 @@ class Character:
         except (ValueError, AttributeError):
             pass
         return None
-    
+
     def get_class_mechanic(self, class_name: str) -> Optional[str]:
         """Get mechanic for specific class (BDD compatibility)"""
         try:
@@ -174,7 +174,7 @@ class Character:
         except (ValueError, AttributeError):
             pass
         return None
-    
+
     def get_class_abilities(self, class_name: str) -> Optional[List[str]]:
         """Get abilities for specific class (BDD compatibility)"""
         try:
@@ -184,17 +184,17 @@ class Character:
         except (ValueError, AttributeError):
             pass
         return None
-    
+
     def _parse_class_for_stats(self, class_name: str) -> 'CharacterClass':
         """Parse class name string to enum value (BDD compatibility)"""
         class_str = class_name.strip().lower()
-        
+
         for char_class in CharacterClass:
             if char_class.value.lower() == class_str:
                 return char_class
-        
+
         raise ValueError(f"Unknown character class: {class_name}")
-    
+
     @classmethod
     def get_all_character_classes(cls) -> List[str]:
         """Get list of all character classes (BDD compatibility)"""

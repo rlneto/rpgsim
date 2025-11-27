@@ -6,25 +6,30 @@ Old imports will redirect to the new system.
 """
 
 # Redirect imports to new modular system
-from .character.facade import (
+from ..systems.character.facade import (
     CharacterSystem,
     create_character,
     level_up_character,
     add_experience,
     get_all_character_classes,
-    get_class_balance_stats
+    get_class_balance_stats,
 )
 
-from .character.domain.character import (
+from ..systems.character.domain.character import (
     Character,
     CharacterClass,
-    CharacterStats
+    CharacterStats,
 )
 
 # Legacy exports for backward compatibility
 __all__ = [
-    'Character', 'CharacterClass', 'CharacterStats',
-    'CharacterSystem',
-    'create_character', 'level_up_character', 'add_experience',
-    'get_all_character_classes', 'get_class_balance_stats'
+    "Character",
+    "CharacterClass",
+    "CharacterStats",
+    "CharacterSystem",
+    "create_character",
+    "level_up_character",
+    "add_experience",
+    "get_all_character_classes",
+    "get_class_balance_stats",
 ]
