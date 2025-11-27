@@ -13,8 +13,8 @@
 ### **📦 WORKING PACKAGES STATUS**
 
 **🎯 WP-001: Foundation Core** (CURRENT)
-- ☐ Character System: `core/systems/character.py` ← **ACTIVE**
-- ☐ World System: `core/systems/world.py`
+- ✅ Character System: `core/systems/character.py` (COMPLETE) ← Move to World System
+- ☐ World System: `core/systems/world.py` ← **ACTIVE**
 - ☐ Integration Testing
 - ☐ Documentation
 
@@ -923,6 +923,23 @@ stages:
 - **Economic Simulation**: Supply/demand pricing, reputation systems, bulk discounts
 - **Integration Tests**: Character/Shop/Item/Economy system integration
 
+#### **Comprehensive Test Refactoring for Modular Architecture (Priority 1)**
+- Refactor ALL unit tests to match new modular architecture
+- Update ALL BDD steps to use proper service facades
+- Create integration tests for ALL modular components
+- Add repository pattern testing for ALL systems
+- Update test coverage targets for ALL modular packages
+- Create service layer unit tests for ALL systems
+- Add domain entity unit tests for ALL domains
+- Test dependency injection patterns across ALL systems
+- Create individual module test suites for ALL packages
+- Test modular component isolation across ALL systems
+- Validate separation of concerns across ALL systems
+- Refactor property-based tests for ALL services
+- Update end-to-end tests for modular architecture
+- Create modular component integration tests
+- Test cross-system interactions with new architecture
+
 #### **Pydantic V2 Migration (Critical Technical Debt)**
 - **Status**: In Progress - Character models partially migrated
 - **Remaining Classes**: Item, Enemy, Quest, Location, GameState models
@@ -982,6 +999,7 @@ stages:
 - [ ] Design and implement SQLite database schema
 - [ ] Add SQLAlchemy ORM integration
 - [ ] Create database migration system (Alembic)
+- [ ] Refactor character tests for modular architecture
 
 #### **Testing Excellence**
 - [ ] Achieve 35/35 shop tests passing (100%)
@@ -1001,24 +1019,116 @@ stages:
 - [ ] Add ORM usage guidelines
 - [ ] Create database migration documentation
 
-### **🔄 BACKLOG MANAGEMENT POLICY**
+### **🔄 BACKLOG COMPLETO COM ORDENAÇÃO DE PRECEDÊNCIA**
 
-**All identified technical debt, blockers, and enhancement requests must be immediately added to this PROJECT.md backlog.**
+**PRIORIDADE 1 - CRÍTICO (Bloqueia Progresso)**
+- [P1.1] 🔥 Refatorar arquitetura modular para TODOS os sistemas (bloqueia tudo)
+  - **Dependências**: Nenhuma
+  - **Pré-requisito para**: TODAS as outras tarefas
+  - **Estimativa**: 3-4 dias
+- [P1.2] 🔥 Refatorar TODOS os testes para arquitetura modular
+  - **Dependências**: P1.1
+  - **Impacto**: Falha em todos os testes atuais
+  - **Estimativa**: 2-3 dias
 
-- **New tasks** → Add to appropriate section within 24 hours of identification
-- **Priority updates** → Reorganize tasks as blockers/enhancements based on impact
-- **Agile tracking** → Use this document as the single source of truth for all work
-- **Visibility** → Maintain clear status indicators (🚨 blockers, 🔧 technical debt, 📋 tracking)
+**PRIORIDADE 2 - URGENTE (Necessário para Funcionalidade)**
+- [P2.1] ⚡ Implementar padrão de repositório em TODOS os sistemas
+  - **Dependências**: P1.1
+  - **Pré-requisito para**: Persistência de dados
+  - **Estimativa**: 2 dias
+- [P2.2] ⚡ Implementar injeção de dependências em TODOS os sistemas
+  - **Dependências**: P1.1, P2.1
+  - **Impacto**: Testabilidade e manutenção
+  - **Estimativa**: 1-2 dias
+- [P2.3] ⚡ Criar fachadas de serviço para TODOS os sistemas
+  - **Dependências**: P1.1
+  - **Pré-requisito para**: API limpa
+  - **Estimativa**: 2 dias
 
-**This ensures no work is lost and all technical decisions are tracked systematically.**
+**PRIORIDADE 3 - IMPORTANTE (Infraestrutura de Dados)**
+- [P3.1] 🗄️ Desenhar schema de banco de dados SQLite
+  - **Dependências**: P1.1, P2.1
+  - **Pré-requisito para**: Persistência
+  - **Estimativa**: 1 dia
+- [P3.2] 🗄️ Implementar integração SQLAlchemy ORM
+  - **Dependências**: P3.1, P2.2
+  - **Impacto**: Camada de dados
+  - **Estimativa**: 2 dias
+- [P3.3] 🗄️ Criar sistema de migração Alembic
+  - **Dependências**: P3.2
+  - **Impacto**: Controle de versão de dados
+  - **Estimativa**: 1 dia
+
+**PRIORIDADE 4 - REQUERIDO (Qualidade e Produção)**
+- [P4.1] ✅ Migrar TODOS os modelos para Pydantic V2
+  - **Dependências**: P1.1
+  - **Sistemas restantes**: Item, Enemy, Quest, Location, GameState
+  - **Estimativa**: 2 dias
+- [P4.2] 🧹 Eliminar TODOS os avisos de depreciação
+  - **Dependências**: P4.1, P1.2
+  - **Impacto**: Estabilidade do sistema
+  - **Estimativa**: 1 dia
+
+**PRIORIDADE 5 - FUNCIONALIDADE (Sistemas Específicos)**
+- [P5.1] 🛒 Corrigir falhas nos testes do sistema de loja
+  - **Dependências**: P1.2, P2.3 (sistema shop precisa ser refatorado)
+  - **Métodos faltando**: process_transaction, calculate_buy_price
+  - **Estimativa**: 2 dias
+- [P5.2] ⚔️ Implementar sistema de combate modular
+  - **Dependências**: P1.1, P2.1, P2.3
+  - **Estimativa**: 3 dias
+- [P5.3] 🌍 Implementar sistema mundial modular
+  - **Dependências**: P1.1, P2.1, P3.2
+  - **Estimativa**: 2-3 dias
+
+**PRIORIDADE 6 - MELHORIAS (Pós-Produção)**
+- [P6.1] 🎮 Implementar sistema de gamificação modular
+  - **Dependências**: P1.1, P5.2
+  - **Estimativa**: 2 dias
+- [P6.2] 🏰 Implementar sistema de masmorra modular
+  - **Dependências**: P1.1, P5.2, P5.3
+  - **Estimativa**: 3 dias
+- [P6.3] 🎵 Refatorar sistema de música para padrão modular
+  - **Dependências**: P1.1
+  - **Estimativa**: 1 dia
+
+**PRIORIDADE 7 - OTIMIZAÇÃO (Performance)**
+- [P7.1] ⚡ Implementar cache em memória com Redis
+  - **Dependências**: P3.2, P2.2
+  - **Impacto**: Performance de leitura
+  - **Estimativa**: 2 dias
+- [P7.2] 📊 Otimizar consultas de banco de dados
+  - **Dependências**: P3.2
+  - **Impacto**: Performance geral
+  - **Estimativa**: 1-2 dias
+
+**CADEIA DE DEPENDÊNCIAS CRÍTICA:**
+P1.1 → P1.2 → P2.1 → P2.2 → P2.3 → P3.1 → P3.2 → P3.3 → P4.1 → P4.2
+
+**BLOQUEIOS ATUAIS:**
+- TODOS os sistemas estão bloqueados pela arquitetura monolítica (P1.1)
+- TODOS os testes estão falhando devido à refatoração (P1.2)
+- Persistência de dados impossível sem repositórios (P2.1)
+- Manutenção de código impossível sem injeção de dependências (P2.2)
+
+**PRÓXIMA AÇÃO IMEDIATA:**
+🔥 **INICIAR P1.1 - Refatorar arquitetura modular para TODOS os sistemas**
+- Esta é a única tarefa que desbloqueia todo o resto do projeto
+- Sem isso, NENHUMA outra tarefa pode ser completada com sucesso
+- Estimativa: 3-4 dias para TODOS os sistemas
 
 ### **🎯 CURRENT PRIORITIES**
 
-1. **Immediate**: Fix remaining 18 shop test failures
-2. **Technical**: Complete Pydantic V2 migration
-3. **Quality**: Achieve 100% test success rate
-4. **Production**: Eliminate all deprecation warnings
-5. **Infrastructure**: Design and implement SQLite database for persistent game state
+1. **MAXIMUM PRIORITY**: Complete modular architecture refactoring
+2. **CRITICAL**: Refactor ALL tests for modular architecture  
+3. **URGENT**: Convert ALL monolithic systems to modular pattern
+4. **HIGH**: Create proper separation of concerns across ALL systems
+5. **HIGH**: Implement dependency injection across ALL systems
+6. **HIGH**: Add comprehensive error handling to ALL modular systems
+7. **MEDIUM**: Design and implement SQLite database architecture
+8. **MEDIUM**: Complete Pydantic V2 migration for remaining systems
+9. **LOW**: Fix remaining shop system tests (after modular refactoring)
+10. **LOW**: Eliminate remaining deprecation warnings
 
 ---
 
