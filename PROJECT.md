@@ -114,6 +114,15 @@
 
 **Key Features**: 23 character classes, 20 cities, dynamic economy, turn-based combat, quest system, dungeon exploration, gamification mechanics.
 
+**Technology Stack**:
+- **Language**: Python 3.8+
+- **Testing Framework**: Behave (BDD) + Pytest
+- **ORM**: SQLAlchemy with SQLite
+- **Database**: SQLite for persistent game state and data integrity
+- **Data Validation**: Pydantic models
+- **Code Quality**: Pylint (10/10 target), >90% test coverage
+- **Development**: Property-based testing with Hypothesis
+
 ## 🗺️ IMPLEMENTATION ROADMAP
 
 ### **🚀 PHASE 1: FOUNDATION (CURRENT PHASE)**
@@ -222,6 +231,14 @@ behave features/world_exploration.feature    # All pass
 1. **READ STATUS**: Look at "PROJECT STATUS TRACKING" above
 2. **FIND CURRENT TASK**: Look at "CURRENT ACTIVE TASK" section
 3. **SELECT SYSTEM**: Choose from Character System → World System → etc
+
+**🚨 CRITICAL: VIRTUAL ENVIRONMENT USAGE**
+- **NEVER** use system pip (`pip install`) - this is managed by the OS
+- **ALWAYS** use virtual environment: `source venv/bin/activate`
+- **ALWAYS** install with: `pip install -r requirements.txt`
+- **NEVER** use `--break-system-packages` - this breaks system dependencies
+- **ALWAYS** check you're in venv: `which python` should show `./venv/bin/python`
+- **IF IN DOUBT**: `deactivate` then `source venv/bin/activate`
 
 **SYSTEM IMPLEMENTATION CYCLE**:
 1. **📁 READ FEATURE**: `features/[system_name].feature` → Understand requirements
@@ -818,6 +835,25 @@ stages:
 - ✅ **Character progression tested from level 1 to max level**
 - ✅ **All 23 character classes fully playable**
 
+### **🎯 FINAL ACCEPTANCE CRITERIA**
+**MANDATORY FOR PROJECT COMPLETION:**
+
+#### **BDD/TDD Excellence**
+- ✅ **ALL BDD steps implemented and passing**
+- ✅ **ALL TDD and Hypothesis tests passing**
+- ✅ **Complete scenario coverage for all game systems**
+
+#### **Code Quality Excellence**
+- ✅ **Pylint 10/10 on ALL code without skipping checks**
+- ✅ **No disabled rules or suppressed warnings**
+- ✅ **Clean, maintainable, production-ready code**
+
+#### **Full E2E Playthrough Testing**
+- ✅ **Complete playthroughs to all endings**
+- ✅ **All possible class combinations tested**
+- ✅ **All ending paths validated and working**
+- ✅ **Full gameplay loop from character creation to completion**
+
 #### **Integration Testing**
 - ✅ **All system-to-system interfaces verified**
 - ✅ **Data flow integrity across complete game loop**
@@ -873,6 +909,116 @@ stages:
 - **Performance**: All benchmarks exceeded or met
 
 **This ensures RPGSim is a production-ready, professional-quality text-based RPG simulation that meets industry standards for code quality, testing, and user experience.**
+
+---
+
+## **ACTIVE BACKLOG & TECHNICAL DEBT**
+
+### **🚨 IMMEDIATE BLOCKERS (Must Complete for 100% Test Success)**
+
+#### **Shop System Test Failures (17/35 passing - 46%)**
+- **Priority 1**: 18 remaining test failures blocking production readiness
+- **Missing Methods**: `process_transaction`, `calculate_buy_price`, trading mechanics
+- **Data Model Issues**: ShopItem.stock property, ShopEconomy.gold_reserve alias
+- **Economic Simulation**: Supply/demand pricing, reputation systems, bulk discounts
+- **Integration Tests**: Character/Shop/Item/Economy system integration
+
+#### **Pydantic V2 Migration (Critical Technical Debt)**
+- **Status**: In Progress - Character models partially migrated
+- **Remaining Classes**: Item, Enemy, Quest, Location, GameState models
+- **Pattern Migration**:
+  - `class Config` → `model_config = ConfigDict()`
+  - `@validator` → `@field_validator`
+  - `values` parameter → `info.data` in validators
+- **Impact**: All deprecation warnings eliminated, modern stack compliance
+
+#### **User Experience Enhancements**
+- Advanced tutorial system
+- Accessibility features
+- UI/UX improvements
+- Save game management
+- Achievement system
+
+### **🔧 ENHANCEMENT BACKLOG (Post-Production)**
+
+#### **SQLite Database Implementation**
+- Database schema design with proper PK/FK relationships
+- ORM integration with SQLAlchemy
+- Migration system with Alembic
+- Save/load game functionality
+- Data persistence and integrity
+- Performance optimization with indexing
+- Hybrid approach with in-memory caching
+
+#### **Shop System Advanced Features**
+- Dynamic pricing algorithms
+- Trade route simulation
+- Shopkeeper AI behaviors
+- Regional economy variations
+- Supply chain mechanics
+
+#### **SQLite Database Implementation**
+- Database schema design with proper PK/FK relationships
+- ORM integration with SQLAlchemy
+- Migration system with Alembic
+- Save/load game functionality
+- Data persistence and integrity
+- Performance optimization with indexing
+- Hybrid approach with in-memory caching
+
+#### **Performance Optimizations**
+- Memory usage profiling
+- Database query optimization
+- Cache layer implementation
+- Concurrent processing improvements
+
+### **📋 TECHNICAL DEBT TRACKER**
+
+#### **Code Quality**
+- [x] Complete Pydantic V2 migration (Item, Enemy, Quest, Location, GameState) ✅
+- [x] Eliminate all deprecation warnings ✅
+- [ ] Implement missing shop system methods
+- [ ] Add comprehensive error handling
+- [ ] Design and implement SQLite database schema
+- [ ] Add SQLAlchemy ORM integration
+- [ ] Create database migration system (Alembic)
+
+#### **Testing Excellence**
+- [ ] Achieve 35/35 shop tests passing (100%)
+- [ ] Add performance benchmarks for shop system
+- [ ] Implement property-based testing for economic systems
+- [ ] Add integration test coverage for all system interactions
+- [ ] Add database integration tests
+- [ ] Test data integrity and constraints
+- [ ] Performance test database operations
+
+#### **Documentation**
+- [ ] Update API docs for Pydantic V2 changes
+- [ ] Document shop system architecture
+- [ ] Add economic simulation documentation
+- [ ] Create deployment guide
+- [ ] Document database schema and relationships
+- [ ] Add ORM usage guidelines
+- [ ] Create database migration documentation
+
+### **🔄 BACKLOG MANAGEMENT POLICY**
+
+**All identified technical debt, blockers, and enhancement requests must be immediately added to this PROJECT.md backlog.**
+
+- **New tasks** → Add to appropriate section within 24 hours of identification
+- **Priority updates** → Reorganize tasks as blockers/enhancements based on impact
+- **Agile tracking** → Use this document as the single source of truth for all work
+- **Visibility** → Maintain clear status indicators (🚨 blockers, 🔧 technical debt, 📋 tracking)
+
+**This ensures no work is lost and all technical decisions are tracked systematically.**
+
+### **🎯 CURRENT PRIORITIES**
+
+1. **Immediate**: Fix remaining 18 shop test failures
+2. **Technical**: Complete Pydantic V2 migration
+3. **Quality**: Achieve 100% test success rate
+4. **Production**: Eliminate all deprecation warnings
+5. **Infrastructure**: Design and implement SQLite database for persistent game state
 
 ---
 

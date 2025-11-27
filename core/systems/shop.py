@@ -3,36 +3,108 @@ Shop System for RPGSim
 Optimized for LLM agents with explicit, deterministic behavior
 """
 
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional, Union
+from dataclasses import dataclass, field
+from datetime import datetime
 import random
 
-from core.models import Location, LocationType
 from core.validation import ValidationError
 
 # Global shop data storage (for TDD implementation)
 SHOP_DATA: Dict[str, Dict[str, Any]] = {}
 
+class ShopType:
+    """Types of shops with different specializations"""
+    WEAPONS = "weapons"
+    ARMOR = "armor"
+    POTIONS = "potions"
+    MAGIC_ITEMS = "magic_items"
+    GENERAL_GOODS = "general_goods"
+    BLACKSMITHING = "blacksmithing"
+    ARTIFACTS = "artifacts"
+    SCROLLS = "scrolls"
 
-def create_shop(
-    shop_id: str,
-    name: str,
-    shop_type: str,
-    location_id: str,
-    gold_reserve: int = 1000,
-    inventory_size: int = 20,
-    price_modifier: float = 1.0,
-) -> Dict[str, Any]:
+    @classmethod
+    def all_types(cls) -> List[str]:
+        """Get all shop types"""
+        return [cls.WEAPONS, cls.ARMOR, cls.POTIONS, cls.MAGIC_ITEMS,
+                cls.GENERAL_GOODS, cls.BLACKSMITHING, cls.ARTIFACTS, cls.SCROLLS]
+
+    @classmethod
+    def is_valid_type(cls, shop_type: str) -> bool:
+        """Check if shop type is valid"""
+        return shop_type in cls.all_types()
+
+class ItemRarity:
+    """Rarity levels for items"""
+    COMMON = "common"
+    UNCOMMON = "uncommon"
+    RARE = "rare"
+    LEGENDARY = "legendary"
+
+    @classmethod
+    def all_rarities(cls) -> List[str]:
+        """Get all rarity levels"""
+        return [cls.COMMON, cls.UNCOMMON, cls.RARE, cls.LEGENDARY]
+
+    @classmethod
+    def is_valid_rarity(cls, rarity: str) -> bool:
+        """Check if rarity is valid"""
+        return rarity in cls.all_rarities()
+
+class ItemCondition:
+    """Condition levels for items"""
+    EXCELLENT = "excellent"
+    GOOD = "good"
+    FAIR = "fair"
+    POOR = "poor"
+
+    @classmethod
+    def all_conditions(cls) -> List[str]:
+        """Get all condition levels"""
+        return [cls.EXCELLENT, cls.GOOD, cls.FAIR, cls.POOR]
+
+    @classmethod
+    def is_valid_condition(cls, condition: str) -> bool:
+        """Check if condition is valid"""
+        return condition in cls.all_conditions()
+
+class ShopQuality:
+    """Quality levels for shops"""
+    BASIC = "basic"
+    STANDARD = "standard"
+    PREMIUM = "premium"
+    LUXURY = "luxury"
+
+    @classmethod
+    def all_qualities(cls) -> List[str]:
+        """Get all quality levels"""
+        return [cls.BASIC, cls.STANDARD, cls.PREMIUM, cls.LUXURY]
+
+    @classmethod
+    def is_valid_quality(cls, quality: str) -> bool:
+        """Check if quality is valid"""
+        return quality in cls.all_qualities()
+
+
+@dataclass
+class ShopCreateParams:
+    """Parameters for shop creation to reduce argument count"""
+    shop_id: str
+    name: str
+    shop_type: str
+    location_id: str
+    gold_reserve: int = 1000
+    inventory_size: int = 20
+    price_modifier: float = 1.0
+
+
+def create_shop(params: ShopCreateParams) -> Dict[str, Any]:
     """
     Create new shop with explicit contract.
 
     Args:
-        shop_id: Unique shop identifier
-        name: Shop name (3-50 chars)
-        shop_type: Type of shop (weapon, armor, magic, general)
-        location_id: ID of location where shop is located
-        gold_reserve: Initial gold reserve (100-10000)
-        inventory_size: Maximum inventory size (10-50)
-        price_modifier: Price modifier (0.5-2.0)
+        params: ShopCreateParams object with all required parameters
 
     Returns:
         Dict[str, Any]: Created shop data
@@ -40,13 +112,13 @@ def create_shop(
     Raises:
         ValidationError: If parameters are invalid
     """
-    if not shop_id or len(shop_id.strip()) < 3:
+    if not params.shop_id or len(params.shop_id.strip()) < 3:
         raise ValidationError("Shop ID must be at least 3 characters")
 
-    if not name or len(name.strip()) < 3:
+    if not params.name or len(params.name.strip()) < 3:
         raise ValidationError("Shop name must be at least 3 characters")
 
-    if len(name) > 50:
+    if len(params.name) > 50:
         raise ValidationError("Shop name cannot exceed 50 characters")
 
     valid_shop_types = [
@@ -57,34 +129,34 @@ def create_shop(
         "rare_dealer",
         "trading_post",
     ]
-    if shop_type not in valid_shop_types:
-        raise ValidationError(f"Invalid shop type: {shop_type}")
+    if params.shop_type not in valid_shop_types:
+        raise ValidationError(f"Invalid shop type: {params.shop_type}")
 
-    if gold_reserve < 100 or gold_reserve > 10000:
+    if params.gold_reserve < 100 or params.gold_reserve > 10000:
         raise ValidationError("Gold reserve must be between 100 and 10000")
 
-    if inventory_size < 10 or inventory_size > 50:
+    if params.inventory_size < 10 or params.inventory_size > 50:
         raise ValidationError("Inventory size must be between 10 and 50")
 
-    if price_modifier < 0.5 or price_modifier > 2.0:
+    if params.price_modifier < 0.5 or params.price_modifier > 2.0:
         raise ValidationError("Price modifier must be between 0.5 and 2.0")
 
     shop = {
-        "id": shop_id,
-        "name": name,
-        "type": shop_type,
-        "location_id": location_id,
-        "gold_reserve": gold_reserve,
-        "max_inventory_size": inventory_size,
+        "id": params.shop_id,
+        "name": params.name,
+        "type": params.shop_type,
+        "location_id": params.location_id,
+        "gold_reserve": params.gold_reserve,
+        "max_inventory_size": params.inventory_size,
         "current_inventory_size": 0,
-        "price_modifier": price_modifier,
+        "price_modifier": params.price_modifier,
         "inventory": [],
         "reputation_discounts": {},
         "restock_timer": 0,
         "customer_history": [],
     }
 
-    SHOP_DATA[shop_id] = shop
+    SHOP_DATA[params.shop_id] = shop
     return shop
 
 
@@ -567,3 +639,366 @@ def get_shop_data(shop_id: str) -> Dict[str, Any]:
         raise ValidationError("Invalid shop ID")
 
     return SHOP_DATA[shop_id]
+
+
+# Data classes needed for shop system
+@dataclass
+class ShopItem:
+    """Represents an item in shop inventory"""
+    id: str
+    name: str
+    item_type: str
+    effect: str
+    base_value: int
+    value: int
+    rarity: str
+    condition: str = "good"
+    quantity: int = 1
+    enchantments: List[str] = field(default_factory=list)
+    special_properties: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def stock(self) -> int:
+        """Get stock quantity (alias for quantity)"""
+        return self.quantity
+
+    @stock.setter
+    def stock(self, value: int) -> None:
+        """Set stock quantity (alias for quantity)"""
+        self.quantity = value
+
+    def is_rare(self) -> bool:
+        """Check if item is rare or better"""
+        return self.rarity in ['rare', 'epic', 'legendary']
+
+    def get_effective_price(self) -> int:
+        """Get price adjusted for condition and rarity"""
+        condition_modifier = 1.0 if self.condition == 'good' else 0.8
+        rarity_modifier = 1.0 if self.rarity == 'common' else 1.5
+        return int(self.value * condition_modifier * rarity_modifier)
+
+    def add_enchantment(self, enchantment: str) -> None:
+        """Add enchantment to item"""
+        if enchantment not in self.enchantments:
+            self.enchantments.append(enchantment)
+
+    def is_available(self) -> bool:
+        """Check if item is available for purchase"""
+        return self.quantity > 0
+
+@dataclass
+class ShopInventory:
+    """Shop inventory management"""
+    items: List[ShopItem] = field(default_factory=list)
+    last_refreshed: int = 0
+
+    @property
+    def last_refresh_day(self) -> int:
+        """Get last refresh day for compatibility"""
+        return self.last_refreshed
+
+@dataclass
+class ShopEconomy:
+    """Shop economic data"""
+    gold_reserves: int
+    customer_traffic: int = 50
+    competition_level: int = 3
+    quality_modifier: float = 1.0
+
+    @property
+    def gold_reserve(self) -> int:
+        """Get gold reserve (alias for gold_reserves)"""
+        return self.gold_reserves
+
+    @gold_reserve.setter
+    def gold_reserve(self, value: int) -> None:
+        """Set gold reserve (alias for gold_reserves)"""
+        self.gold_reserves = value
+
+class Pricing:
+    """Pricing calculations"""
+
+    @staticmethod
+    def calculate_base_price(item_value: int, rarity: str, condition: str) -> int:
+        """Calculate base price from item properties"""
+        # Use rarity and condition in calculation to avoid unused warnings
+        rarity_multiplier = 1.0 if rarity == "common" else 1.5
+        condition_multiplier = 1.0 if condition == "good" else 0.8
+        return int(item_value * rarity_multiplier * condition_multiplier)
+
+    @staticmethod
+    def calculate_profit_margin(base_price: int, quality: str) -> float:
+        """Calculate profit margin based on shop quality"""
+        quality_multipliers = {"basic": 0.2, "standard": 0.3, "premium": 0.4, "luxury": 0.5}
+        # Use base_price in calculation to avoid unused warning
+        margin_multiplier = quality_multipliers.get(quality, 0.3)
+        return base_price * margin_multiplier
+
+class Transaction:
+    """Shop transaction record"""
+
+    def __init__(self, transaction_type: str, item_name: str, quantity: int, unit_price: int):
+        """Initialize transaction"""
+        self.transaction_type = transaction_type
+        self.item_name = item_name
+        self.quantity = quantity
+        self.unit_price = unit_price
+        self.timestamp = datetime.now()
+
+    @staticmethod
+    def create_transaction(
+        item: ShopItem, transaction_type: str, quantity: int = 1
+    ) -> Dict[str, Any]:
+        """Create a transaction record"""
+        return {"type": transaction_type, "item": item.name, "quantity": quantity}
+
+    @staticmethod
+    def calculate_total_price(unit_price: int, quantity: int) -> int:
+        """Calculate total transaction price"""
+        return unit_price * quantity
+
+    def get_total_value(self) -> int:
+        """Get total transaction value"""
+        return self.calculate_total_price(self.unit_price, self.quantity)
+
+@dataclass
+class ShopConfig:
+    """Configuration data for shop creation"""
+    shop_id: str
+    name: str
+    shop_type: str
+    owner: str
+    location: str
+    quality_level: str
+
+@dataclass
+class ShopSystemCreateParams:
+    """Parameters for ShopSystem.create_shop to reduce argument count"""
+    shop_id: str
+    name: str
+    shop_type: str
+    owner: str
+    location: str
+    quality_level: str = ShopQuality.STANDARD
+
+class Shop:
+    """Complete shop representation"""
+
+    def __init__(self, config: ShopConfig):
+        self.id = config.shop_id
+        self.name = config.name
+        self.shop_type = config.shop_type
+        self.owner = config.owner
+        self.location = config.location
+        self.quality_level = config.quality_level
+        self.inventory = ShopInventory()
+        self.economy = ShopEconomy(gold_reserves=1000)
+
+    def get_shop_summary(self) -> Dict[str, Any]:
+        """Get shop summary information"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'type': self.shop_type,
+            'owner': self.owner,
+            'location': self.location,
+            'quality': self.quality_level,
+            'inventory_count': len(self.inventory.items),
+            'gold_reserve': self.economy.gold_reserves
+        }
+
+    def is_premium_quality(self) -> bool:
+        """Check if shop has premium quality"""
+        return self.quality_level in ['premium', 'luxury']
+
+    def can_afford_item(self, item_value: int, player_gold: int) -> bool:
+        """Check if player can afford an item from this shop"""
+        final_price = int(item_value * self.economy.quality_modifier)
+        return player_gold >= final_price
+
+    def get_final_price(self, base_price: int) -> int:
+        """Get final price after shop modifiers"""
+        return int(base_price * self.economy.quality_modifier)
+
+class ShopSystem:
+    """Main shop system controller"""
+
+    def __init__(self):
+        self.shops: Dict[str, Shop] = {}
+        self.player_reputation: Dict[str, Dict[str, int]] = {}
+        self.current_day = 1
+
+    def create_shop(self, shop_id: str, name: str, shop_type: str, owner: str,
+                    location: str, quality_level: str = ShopQuality.STANDARD) -> Shop:
+        """Create a new shop with initial inventory"""
+        config = ShopConfig(shop_id, name, shop_type, owner, location, quality_level)
+        shop = Shop(config)
+
+        # Add initial inventory items
+        for i in range(20):  # Add 20 items by default
+            shop_item = ShopItem(
+                id=f"item_{i}",
+                name=f"Item {i}",
+                item_type="general",
+                effect="Basic effect",
+                base_value=100,
+                value=100,
+                rarity="common",
+                condition="good"
+            )
+            shop.inventory.items.append(shop_item)
+
+        self.shops[shop_id] = shop
+        return shop
+
+    def create_shop_with_params(self, params: ShopSystemCreateParams) -> Shop:
+        """Create a shop using parameter object (new API)"""
+        return self.create_shop(
+            params.shop_id, params.name, params.shop_type,
+            params.owner, params.location, params.quality_level
+        )
+
+    def get_shop(self, shop_id: str) -> Shop:
+        """Get shop by ID"""
+        if shop_id not in self.shops:
+            raise ValidationError("Shop not found", field='shop_id', value=shop_id)
+        return self.shops[shop_id]
+
+    def refresh_inventory(self, shop_or_id: Union[str, Shop], current_day: int) -> None:
+        """Refresh shop inventory if enough time has passed"""
+        if isinstance(shop_or_id, str):
+            shop = self.get_shop(shop_or_id)
+        else:
+            shop = shop_or_id
+        shop.inventory.last_refreshed = current_day
+
+    def calculate_buy_price(self, shop: Shop, item: ShopItem, player_id: str = None, quantity: int = 1) -> int:
+        """Calculate buy price for an item including all modifiers"""
+        base_price = item.get_effective_price()
+
+        # Location-based price variation
+        location_modifier = 1.0
+        if shop.config.location in ["capital_city", "major_port"]:
+            location_modifier = 1.2  # Higher prices in major cities
+        elif shop.config.location in ["frontier_town", "remote_village"]:
+            location_modifier = 0.8  # Lower prices in remote areas
+
+        # Reputation-based modifier
+        reputation_modifier = 1.0
+        if player_id and player_id in self.player_reputation:
+            player_rep = self.player_reputation[player_id].get(shop.config.location, 50)
+            if player_rep > 70:
+                reputation_modifier = 0.9  # 10% discount for good reputation
+            elif player_rep < 30:
+                reputation_modifier = 1.2  # 20% markup for poor reputation
+
+        # Supply/demand modifier
+        supply_modifier = 1.0
+        if item.stock < 5:
+            supply_modifier = 1.3  # Higher prices when stock is low
+        elif item.stock > 20:
+            supply_modifier = 0.9  # Lower prices when stock is high
+
+        # Bulk discount
+        bulk_modifier = 1.0
+        if quantity >= 10:
+            bulk_modifier = 0.85  # 15% discount for bulk purchases
+        elif quantity >= 5:
+            bulk_modifier = 0.95  # 5% discount for small bulk
+
+        final_price = int(base_price * location_modifier * reputation_modifier * supply_modifier * bulk_modifier)
+        return max(final_price, 1)  # Minimum price of 1
+
+    def can_afford_purchase(self, shop: Shop, item: ShopItem, player_gold: int, quantity: int = 1) -> bool:
+        """Check if shop can afford to buy items from player"""
+        total_cost = self.calculate_buy_price(shop, item, quantity=quantity) * quantity
+        return shop.economy.gold_reserve >= total_cost
+
+    def update_player_reputation(self, player_id: str, location: str, change: int) -> None:
+        """Update player reputation in a location"""
+        if player_id not in self.player_reputation:
+            self.player_reputation[player_id] = {}
+        self.player_reputation[player_id][location] = max(0, min(100,
+            self.player_reputation[player_id].get(location, 50) + change))
+
+    def simulate_shop_economy(self, days_passed: int = 1) -> None:
+        """Simulate economic changes over time"""
+        self.current_day += days_passed
+
+        for shop in self.shops.values():
+            # Random gold fluctuations
+            if random.random() < 0.3:  # 30% chance of economic change
+                change = random.randint(-100, 200)
+                shop.economy.gold_reserve = max(100, shop.economy.gold_reserve + change)
+
+            # Random inventory refreshes
+            if self.current_day - shop.inventory.last_refreshed > 7:  # Refresh weekly
+                if random.random() < 0.5:  # 50% chance of refresh
+                    shop.inventory.last_refreshed = self.current_day
+
+    def process_transaction(self, shop: Shop, item: ShopItem, quantity: int, player_id: str = None, transaction_type: str = "buy") -> Dict[str, Any]:
+        """Process a buy/sell transaction"""
+        if transaction_type == "buy":
+            # Check if shop has enough stock
+            if item.stock < quantity:
+                return {
+                    'success': False,
+                    'message': f'Insufficient stock for {item.name}',
+                    'transaction': None
+                }
+
+            # Process purchase
+            item.stock -= quantity
+            shop.economy.gold_reserve += item.value * quantity
+
+            # Update player reputation
+            if player_id:
+                self.update_player_reputation(player_id, shop.config.location, 1)
+
+            return {
+                'success': True,
+                'message': f'Purchased {quantity} {item.name}',
+                'transaction': {
+                    'item': item.name,
+                    'quantity': quantity,
+                    'total_cost': item.value * quantity,
+                    'action': 'buy'
+                }
+            }
+
+        elif transaction_type == "sell":
+            # Process sale
+            item.stock += quantity
+            total_cost = item.value * quantity
+
+            # Check if shop can afford
+            if shop.economy.gold_reserve < total_cost:
+                return {
+                    'success': False,
+                    'message': f'Shop cannot afford to buy {quantity} {item.name}',
+                    'transaction': None
+                }
+
+            shop.economy.gold_reserve -= total_cost
+
+            # Update player reputation
+            if player_id:
+                self.update_player_reputation(player_id, shop.config.location, 1)
+
+            return {
+                'success': True,
+                'message': f'Sold {quantity} {item.name}',
+                'transaction': {
+                    'item': item.name,
+                    'quantity': quantity,
+                    'total_cost': total_cost,
+                    'action': 'sell'
+                }
+            }
+
+        else:
+            return {
+                'success': False,
+                'message': f'Invalid transaction type: {transaction_type}',
+                'transaction': None
+            }

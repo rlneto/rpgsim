@@ -123,10 +123,14 @@ class PerformanceMetrics:
         successes = sum(1 for e in self.recent_encounters if e['success'])
         self.success_rate = successes / len(self.recent_encounters)
 
-        avg_time = sum(e['time_taken'] for e in self.recent_encounters) / len(self.recent_encounters)
+        avg_time = sum(e['time_taken'] for e in self.recent_encounters) / len(
+            self.recent_encounters
+        )
         self.time_efficiency = max(0.0, 1.0 - (avg_time - 60) / 240)  # Normalize around 1-5 minutes
 
-        self.resource_efficiency = sum(1 - e['resources_used'] for e in self.recent_encounters) / len(self.recent_encounters)
+        self.resource_efficiency = sum(
+            1 - e['resources_used'] for e in self.recent_encounters
+        ) / len(self.recent_encounters)
 
 
 @dataclass
@@ -362,7 +366,9 @@ class DynamicDifficultyAdjustment:
 
         return new_difficulty
 
-    def apply_statistical_smoothing(self, new_difficulty: float, smoothing_factor: float = 0.7) -> float:
+    def apply_statistical_smoothing(self,
+        new_difficulty: float,
+        smoothing_factor: float = 0.7) -> float:
         """Apply statistical smoothing to avoid jarring difficulty spikes."""
         smoothed_difficulty = (
             new_difficulty * smoothing_factor +
@@ -373,7 +379,8 @@ class DynamicDifficultyAdjustment:
         self.adjustment_history.append({
             'old_difficulty': self.current_difficulty,
             'new_difficulty': smoothed_difficulty,
-            'percent_change': abs(smoothed_difficulty - self.current_difficulty) / max(0.1, self.current_difficulty),
+            'percent_change': abs(smoothed_difficulty - self.current_difficulty) / max(0.1,
+        self.current_difficulty),
             'timestamp': time.time()
         })
 
@@ -390,7 +397,8 @@ class DynamicDifficultyAdjustment:
         difficulty = player_skill + (z0 * sigma)
         return max(0.1, min(0.9, difficulty))
 
-    def should_apply_micro_adjustment(self, recent_encounters: List[Dict[str, Any]]) -> Tuple[bool, float]:
+    def should_apply_micro_adjustment(self, recent_encounters: List[Dict[str, Any]]) -> Tuple[bool,
+        float]:
         """Determine if micro-adjustment is needed based on success patterns."""
         if len(recent_encounters) < 2:
             return False, 0.0
@@ -516,7 +524,8 @@ class RewardSystem:
         self.total_motivation_index = 0.0
         self.player_sensitivity = "medium"
 
-    def process_action(self, action_type: str, difficulty: float, time_investment: int, skill_required: float) -> Optional[RewardEvent]:
+    def process_action(self, action_type: str, difficulty: float, time_investment: int,
+        skill_required: float) -> Optional[RewardEvent]:
         """Process a player action and determine if reward should be given."""
         self.actions_since_last_reward += 1
         self.encounters_since_last_rare += 1
@@ -649,8 +658,10 @@ class NeuroadaptiveEngagementSystem:
         recent_data = [b for b in self.behavioral_data if time.time() - b['timestamp'] < 3600]  # Last hour
 
         if not recent_data:
-            return {metric: 0.5 for metric in ['session_duration', 'action_frequency', 'success_rate',
-                                              'exploration_rate', 'social_interaction', 'achievement_progress']}
+            return {metric: 0.5 for metric in ['session_duration', 'action_frequency',
+        'success_rate',
+                                              'exploration_rate', 'social_interaction',
+        'achievement_progress']}
 
         # Session duration (normalized to 0-1, assuming max 2 hours is optimal)
         session_duration = min(1.0, (time.time() - recent_data[0]['timestamp']) / 7200)
@@ -814,7 +825,10 @@ class ProgressVisualizationSystem:
             'total_effort_to_level': effort_required
         }
 
-    def apply_logarithmic_scaling(self, raw_progress: float, k: float = 0.5, s0: float = 0.01) -> float:
+    def apply_logarithmic_scaling(self,
+        raw_progress: float,
+        k: float = 0.5,
+        s0: float = 0.01) -> float:
         """Apply Weber-Fechner law: ΔP = k * ln(S/S₀)."""
         return self.visualization.apply_logarithmic_scaling(raw_progress)
 
@@ -881,7 +895,9 @@ class ContentVarietyOptimizer:
 
             return random.choice(optimal_content) if optimal_content else random.choice(list(ContentVarietyType))
 
-    def update_content_exposure(self, content_type: ContentVarietyType, exposure_amount: float = 0.1) -> None:
+    def update_content_exposure(self,
+        content_type: ContentVarietyType,
+        exposure_amount: float = 0.1) -> None:
         """Update content exposure tracking."""
         current = self.content_exposure[content_type.value]
         self.content_exposure[content_type.value] = min(1.0, current + exposure_amount)
@@ -918,7 +934,8 @@ class InterventionSystem:
         self.intervention_history = deque(maxlen=100)
         self.available_interventions = list(InterventionType)
 
-    def trigger_intervention(self, intervention_type: InterventionType, context: Dict[str, Any]) -> Dict[str, Any]:
+    def trigger_intervention(self, intervention_type: InterventionType, context: Dict[str,
+        Any]) -> Dict[str, Any]:
         """Trigger a specific intervention type."""
         intervention_data = {
             'type': intervention_type,
@@ -938,7 +955,8 @@ class InterventionSystem:
         elif intervention_type == InterventionType.ACHIEVEMENT_MILESTONE:
             intervention_data['outcome'] = self._unlock_milestone(context)
         else:
-            intervention_data['outcome'] = self._apply_generic_intervention(intervention_type, context)
+            intervention_data['outcome'] = self._apply_generic_intervention(intervention_type,
+        context)
 
         self.intervention_history.append(intervention_data)
         return intervention_data
@@ -1000,7 +1018,8 @@ class InterventionSystem:
             'progress_percentage': player_progress.get('percentage', 0)
         }
 
-    def _apply_generic_intervention(self, intervention_type: InterventionType, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _apply_generic_intervention(self, intervention_type: InterventionType, context: Dict[str,
+        Any]) -> Dict[str, Any]:
         """Apply generic intervention for other types."""
         return {
             'intervention_applied': True,
@@ -1054,7 +1073,10 @@ class GamificationSystem:
         }
 
     def process_player_action(self, action_type: str, success: bool, time_taken: int,
-                             difficulty: float = None, metadata: Dict[str, Any] = None) -> Dict[str, Any]:
+                             difficulty: float = None,
+        metadata: Dict[str,
+        Any] = None) -> Dict[str,
+        Any]:
         """Process a player action through all gamification systems."""
         metadata = metadata or {}
 
@@ -1237,7 +1259,8 @@ class GamificationSystem:
         return {
             'total_sessions_processed': len(self.engagement_system.intervention_history),
             'total_rewards_distributed': len(self.reward_system.reward_history),
-            'average_motivation_index': self.reward_system.total_motivation_index / max(1, len(self.reward_system.reward_history)),
+            'average_motivation_index': self.reward_system.total_motivation_index / max(1,
+        len(self.reward_system.reward_history)),
             'difficulty_adjustments': len(self.dda.adjustment_history),
             'current_player_count': 1,  # Simplified for single-player
             'system_uptime': time.time() - self.player_state['session_start_time'],

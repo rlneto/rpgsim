@@ -5,7 +5,7 @@ Optimized for LLM agents with explicit, deterministic behavior
 
 from typing import List, Dict, Any, Optional, Union
 from enum import Enum
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 import json
 from datetime import datetime
 
@@ -42,21 +42,21 @@ class CharacterClass(str, Enum):
 
 class CharacterStats(BaseModel):
     """Character statistics model with explicit validation for agents."""
-    
+
+    model_config = ConfigDict(
+        validate_assignment=True,
+        use_enum_values=True,
+        extra='forbid'
+    )
+
     strength: int = Field(ge=1, le=20, description="Physical strength")
     dexterity: int = Field(ge=1, le=20, description="Agility and reflexes")
     intelligence: int = Field(ge=1, le=20, description="Mental capacity")
     wisdom: int = Field(ge=1, le=20, description="Perception and insight")
     charisma: int = Field(ge=1, le=20, description="Social influence")
     constitution: int = Field(ge=1, le=20, description="Health and stamina")
-    
-    class Config:
-        """Pydantic configuration for agent optimization."""
-        validate_assignment = True
-        use_enum_values = True
-        extra = "forbid"
-    
-    @validator('*', pre=True)
+
+    @field_validator('*', mode='before')
     def validate_stats_are_integers(cls, v):
         """Ensure all stats are integers."""
         if not isinstance(v, int):
@@ -78,7 +78,16 @@ class CharacterStats(BaseModel):
 
 class Character(BaseModel):
     """Character model with explicit validation for agents."""
-    
+
+    model_config = ConfigDict(
+        validate_assignment=True,
+        use_enum_values=True,
+        extra='forbid',
+        json_encoders={
+            datetime: lambda v: v.isoformat()
+        }
+    )
+
     id: str = Field(..., description="Unique character identifier")
     name: str = Field(min_length=1, max_length=50, description="Character name")
     class_type: CharacterClass = Field(..., description="Character class")
@@ -92,44 +101,36 @@ class Character(BaseModel):
     inventory: List[Any] = Field(default_factory=list, description="Inventory items")
     quests_completed: List[Any] = Field(default_factory=list, description="Completed quests")
     skills: Dict[str, int] = Field(default_factory=dict, description="Character skills")
-    
-    class Config:
-        """Pydantic configuration for agent optimization."""
-        validate_assignment = True
-        use_enum_values = True
-        extra = "forbid"
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
-    
-    @validator('name')
+
+    @field_validator('name')
     def validate_character_name(cls, v):
         """Validate character name with explicit rules."""
         if not v or not v.strip():
             raise ValueError("Character name cannot be empty")
-        
+
         if len(v.strip()) < 1:
             raise ValueError("Character name cannot be only whitespace")
-        
+
         if len(v) > 50:
             raise ValueError("Character name cannot exceed 50 characters")
-        
+
         # Check for invalid characters
         invalid_chars = ['<', '>', '/', '\\', '|', '?', '*', '"']
         for char in invalid_chars:
             if char in v:
                 raise ValueError(f"Character name cannot contain '{char}'")
-        
+
         return v.strip()
-    
-    @validator('hp')
-    def validate_hp_not_exceed_max(cls, v, values):
+
+    @field_validator('hp')
+    def validate_hp_not_exceed_max(cls, v, info):
         """Ensure HP does not exceed max HP."""
-        if 'max_hp' in values and v > values['max_hp']:
+        max_hp = info.data.get('max_hp')
+        if max_hp and v > max_hp:
             raise ValueError("Current HP cannot exceed maximum HP")
         return v
     
-    @validator('max_hp')
+    @field_validator('max_hp')
     def validate_max_hp_positive(cls, v):
         """Ensure max HP is positive."""
         if v <= 0:
@@ -257,7 +258,13 @@ class ItemType(str, Enum):
 
 class Item(BaseModel):
     """Item model with explicit validation for agents."""
-    
+
+    model_config = ConfigDict(
+        validate_assignment=True,
+        use_enum_values=True,
+        extra='forbid'
+    )
+
     id: str = Field(..., description="Unique item identifier")
     name: str = Field(min_length=1, max_length=100, description="Item name")
     type: ItemType = Field(..., description="Item type")
@@ -271,27 +278,22 @@ class Item(BaseModel):
     stackable: bool = Field(default=False, description="Whether item can be stacked")
     max_stack: int = Field(default=1, ge=1, description="Maximum stack size")
     
-    class Config:
-        """Pydantic configuration for agent optimization."""
-        validate_assignment = True
-        use_enum_values = True
-        extra = "forbid"
-    
-    @validator('name')
+    @field_validator('name')
     def validate_item_name(cls, v):
         """Validate item name."""
         if not v or not v.strip():
             raise ValueError("Item name cannot be empty")
-        
+
         if len(v.strip()) < 1:
             raise ValueError("Item name cannot be only whitespace")
-        
+
         return v.strip()
-    
-    @validator('max_stack')
-    def validate_max_stack_for_non_stackable(cls, v, values):
+
+    @field_validator('max_stack')
+    def validate_max_stack_for_non_stackable(cls, v, info):
         """Ensure max_stack is 1 for non-stackable items."""
-        if 'stackable' in values and not values['stackable'] and v > 1:
+        stackable = info.data.get('stackable')
+        if stackable is not None and not stackable and v > 1:
             raise ValueError("Non-stackable items must have max_stack of 1")
         return v
     
@@ -331,7 +333,13 @@ class EnemyType(str, Enum):
 
 class Enemy(BaseModel):
     """Enemy model with explicit validation for agents."""
-    
+
+    model_config = ConfigDict(
+        validate_assignment=True,
+        use_enum_values=True,
+        extra='forbid'
+    )
+
     id: str = Field(..., description="Unique enemy identifier")
     name: str = Field(min_length=1, max_length=100, description="Enemy name")
     type: EnemyType = Field(..., description="Enemy type")
@@ -346,21 +354,16 @@ class Enemy(BaseModel):
     reward_items: List[Any] = Field(default_factory=list, description="Item rewards")
     boss: bool = Field(default=False, description="Whether enemy is a boss")
     description: str = Field(default="", max_length=500, description="Enemy description")
-    
-    class Config:
-        """Pydantic configuration for agent optimization."""
-        validate_assignment = True
-        use_enum_values = True
-        extra = "forbid"
-    
-    @validator('hp')
-    def validate_hp_not_exceed_max(cls, v, values):
+
+    @field_validator('hp')
+    def validate_hp_not_exceed_max(cls, v, info):
         """Ensure HP does not exceed max HP."""
-        if 'max_hp' in values and v > values['max_hp']:
+        max_hp = info.data.get('max_hp')
+        if max_hp and v > max_hp:
             raise ValueError("Current HP cannot exceed maximum HP")
         return v
     
-    @validator('max_hp')
+    @field_validator('max_hp')
     def validate_max_hp_positive(cls, v):
         """Ensure max HP is positive."""
         if v <= 0:
@@ -415,10 +418,10 @@ class QuestObjective(BaseModel):
     progress: int = Field(default=0, ge=0, description="Current progress")
     target: int = Field(default=1, ge=0, description="Target progress")
     
-    class Config:
-        """Pydantic configuration for agent optimization."""
-        validate_assignment = True
-        extra = "forbid"
+    model_config = ConfigDict(
+        validate_assignment=True,
+        extra='forbid'
+    )
 
 
 class Quest(BaseModel):
@@ -436,14 +439,14 @@ class Quest(BaseModel):
     status: QuestStatus = Field(default=QuestStatus.NOT_STARTED, description="Quest status")
     time_limit: Optional[int] = Field(default=None, ge=0, description="Time limit in minutes")
     prerequisites: List[str] = Field(default_factory=list, description="Quest prerequisites")
-    
-    class Config:
-        """Pydantic configuration for agent optimization."""
-        validate_assignment = True
-        use_enum_values = True
-        extra = "forbid"
-    
-    @validator('name')
+
+    model_config = ConfigDict(
+        validate_assignment=True,
+        use_enum_values=True,
+        extra='forbid'
+    )
+
+    @field_validator('name')
     def validate_quest_name(cls, v):
         """Validate quest name."""
         if not v or not v.strip():
@@ -451,7 +454,7 @@ class Quest(BaseModel):
         
         return v.strip()
     
-    @validator('objectives')
+    @field_validator('objectives')
     def validate_objectives_not_empty(cls, v):
         """Ensure objectives list is not empty."""
         if not v:
@@ -518,14 +521,14 @@ class Location(BaseModel):
     quests: List[Any] = Field(default_factory=list, description="Quests at location")
     connections: List[str] = Field(default_factory=list, description="Connected locations")
     visited: bool = Field(default=False, description="Whether location was visited")
-    
-    class Config:
-        """Pydantic configuration for agent optimization."""
-        validate_assignment = True
-        use_enum_values = True
-        extra = "forbid"
-    
-    @validator('name')
+
+    model_config = ConfigDict(
+        validate_assignment=True,
+        use_enum_values=True,
+        extra='forbid'
+    )
+
+    @field_validator('name')
     def validate_location_name(cls, v):
         """Validate location name."""
         if not v or not v.strip():
@@ -578,16 +581,16 @@ class GameState(BaseModel):
     quests_completed: List[Any] = Field(default_factory=list, description="Completed quests")
     save_timestamp: Optional[str] = Field(default=None, description="Save timestamp")
     save_version: str = Field(default="1.0.0", description="Save version")
-    
-    class Config:
-        """Pydantic configuration for agent optimization."""
-        validate_assignment = True
-        use_enum_values = True
-        extra = "forbid"
-        json_encoders = {
+
+    model_config = ConfigDict(
+        validate_assignment=True,
+        use_enum_values=True,
+        extra='forbid',
+        json_encoders={
             datetime: lambda v: v.isoformat()
         }
-    
+    )
+
     def is_new_game(self) -> bool:
         """Check if this is a new game."""
         return self.player is None and self.world_time == 0 and self.day == 1

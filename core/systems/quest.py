@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 
-from core.models import Quest, QuestObjective, QuestStatus
+from core.models import Character, Quest, QuestObjective, QuestStatus
 
 
 class QuestType:
@@ -1384,3 +1384,49 @@ class QuestSystem:
     def get_system_statistics(self) -> Dict[str, Any]:
         """Get comprehensive statistics about the quest system"""
         return self.quest_manager.get_quest_statistics()
+
+
+# Simple quest completion function for E2E tests
+def complete_quest(character: Character, quest: Quest) -> Dict[str, Any]:
+    """
+    Simple quest completion function for E2E testing.
+
+    Args:
+        character: Character completing the quest
+        quest: Quest to complete
+
+    Returns:
+        Dict with completion results
+    """
+    # Mark quest as completed
+    if hasattr(quest, 'objectives'):
+        for obj in quest.objectives:
+            obj.completed = True
+
+    # Add to character's completed quests if they have this attribute
+    if hasattr(character, 'quests_completed'):
+        quest_result = {
+            'id': quest.id,
+            'name': quest.name,
+            'completed': True,
+            'experience_reward': getattr(quest, 'experience_reward', 100),
+            'gold_reward': getattr(quest, 'gold_reward', 50)
+        }
+        character.quests_completed.append(quest_result)
+
+    # Apply rewards
+    experience_reward = getattr(quest, 'experience_reward', 100)
+    gold_reward = getattr(quest, 'gold_reward', 50)
+
+    character.experience += experience_reward
+    if hasattr(character, 'gold'):
+        character.gold += gold_reward
+
+    return {
+        'success': True,
+        'message': f'Quest "{quest.name}" completed successfully!',
+        'experience_gained': experience_reward,
+        'gold_gained': gold_reward,
+        'character_level': character.level,
+        'character_experience': character.experience
+    }

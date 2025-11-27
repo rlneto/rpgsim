@@ -1,46 +1,19 @@
-Feature: City Management
+Feature: Character Creation and Classes # features/character_creation.feature:1
 
-  Scenario: City structure and buildings 
-    Given player enters any city
-    When they explore city layout
-    Then they should find at least 8 building types
-    And each building should have specific functions
-    And city should have unique architectural style
-    And buildings should be logically arranged
+  Scenario: Creating a new character                                              # features/character_creation.feature:3
+    Given a new player wants to start the game                                    # features/steps/character_steps.py:10
+    When they access the character creation screen                                # features/steps/character_steps.py:24
+    Then they should be presented with 23 unique character classes to choose from # features/steps/character_steps.py:34
+    And each class should have distinct starting stats                            # features/steps/character_steps.py:39
+    And each class should have unique gameplay mechanics                          # features/steps/character_steps.py:57
+    And each class should have access to at least 10 unique abilities             # features/steps/character_steps.py:70
+    And the character creation should include name selection                      # features/steps/character_steps.py:86
+    And the character creation should include visual customization (text-based)   # features/steps/character_steps.py:90
 
-  Scenario: City economy and population 
-    Given player visits different cities
-    When they observe city characteristics
-    Then each city should have distinct economy type
-    And population should affect shop availability
-    And city wealth should influence item prices
-    And cities should have cultural uniqueness
-
-  Scenario: City services and facilities 
-    Given player needs city services
-    When they seek assistance
-    Then they should find inns for rest
-    And they should find training grounds
-    And they should find quest boards
-    And they should find crafting stations
-
-  Scenario: City discovery and information 
-    Given player discovers new city
-    When they enter city for first time
-    Then they should receive city description
-      ASSERT FAILED: Description should mention city characteristics
-
-    And they should learn about available services
-    And they should see population size
-    And they should understand economic focus
-
-  Scenario: City reputation system 
-    Given player interacts with city over time
-    When they complete quests or trade
-    Then their reputation should change
-    And reputation should affect prices
-    And reputation should unlock new services
-    And high reputation should provide special benefits
-      ASSERT FAILED: Positive reputation should provide benefits
-
+  Scenario: Character class balance                                                     # features/character_creation.feature:13
+    Given the game has 23 character classes                                             # features/steps/character_steps.py:94
+    When comparing class statistics                                                     # features/steps/character_steps.py:109
+    Then no class should be more than 15% more powerful than any other class            # features/steps/character_steps.py:114
+    And each class should have clear strengths and weaknesses                           # features/steps/character_steps.py:119
+    And each class should have at least one unique mechanic not shared by other classes # features/steps/character_steps.py:137
 

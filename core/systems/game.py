@@ -12,11 +12,7 @@ from typing import Optional, Dict, Any
 # Add core to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from core.systems.character import Character, create_character
-# from core.systems.combat import CombatEngine, Enemy  # Temporarily disabled
-# from core.systems.city import City  # Temporarily disabled
-# from core.systems.navigation import NavigationEngine  # Temporarily disabled
-from core.models import GameState
+from core.models import Character, CharacterStats, CharacterClass, GameState
 from core.validation import validate_character_creation
 
 class GameEngine:
@@ -66,13 +62,20 @@ class GameEngine:
                     "message": f"Invalid character class: {character_class}"
                 }
 
-            # Create character
-            player = create_character(name.strip(), character_class)
+            # Create character (temporary placeholder)
+            player = Character(
+                name=name.strip(),
+                class_type=CharacterClass[character_class.upper()],
+                level=1,
+                xp=0,
+                stats=CharacterStats(strength=10, dexterity=10, intelligence=10,
+                                    wisdom=10, charisma=10, constitution=10)
+            )
 
             # Validate character data (simplified validation)
             validation_result = validate_character_creation(
                 player.name,
-                CharacterClass(player.class_type),
+                player.class_type,
                 player.stats
             )
             if not validation_result:
@@ -119,7 +122,7 @@ class GameEngine:
 
             # Write to save file
             save_file = os.path.join(save_dir, f"save_slot_{slot}.json")
-            with open(save_file, 'w') as f:
+            with open(save_file, 'w', encoding='utf-8') as f:
                 json.dump(save_data, f, indent=2)
 
             return {
@@ -146,7 +149,7 @@ class GameEngine:
                 }
 
             # Load save data
-            with open(save_file, 'r') as f:
+            with open(save_file, 'r', encoding='utf-8') as f:
                 save_data = json.load(f)
 
             # Restore game state

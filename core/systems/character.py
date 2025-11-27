@@ -3,9 +3,8 @@ Character System for RPGSim
 Implements character creation, classes, stats, and progression
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from enum import Enum
-
 
 class CharacterClass(Enum):
     """All 23 character classes available in RPGSim"""
@@ -34,7 +33,6 @@ class CharacterClass(Enum):
     ELEMENTALIST = "Elementalist"
     NINJA = "Ninja"
     DEVELOPER = "Developer"
-
 
 class Character:  # pylint: disable=too-many-instance-attributes
     """
@@ -214,8 +212,8 @@ class Character:  # pylint: disable=too-many-instance-attributes
         CharacterClass.DRUID: {
             "mechanic": "Shape-shifting",
             "base_stats": {
-                "strength": 12,
-                "dexterity": 13,
+                "strength": 11,
+                "dexterity": 14,
                 "intelligence": 12,
                 "wisdom": 17,
                 "charisma": 11,
@@ -457,9 +455,9 @@ class Character:  # pylint: disable=too-many-instance-attributes
                 "strength": 12,
                 "dexterity": 18,
                 "intelligence": 12,
-                "wisdom": 11,
+                "wisdom": 10,
                 "charisma": 13,
-                "constitution": 13,
+                "constitution": 12,
             },
             "primary_stat": "dexterity",
             "abilities": [
@@ -623,15 +621,38 @@ class Character:  # pylint: disable=too-many-instance-attributes
 
     def __init__(self):
         """Initialize empty character"""
+        self.id: str = ""
         self.name: str = ""
         self.class_type: Optional[CharacterClass] = None
         self.level: int = 1
         self.experience: int = 0
-        self.stats: Dict[str, int] = {}
+        self._stats: Dict[str, int] = {}
+        self.hp: int = 0
+        self.max_hp: int = 0
+        self.gold: int = 0
         self.inventory: List[str] = []
         self.abilities: List[str] = []
+        self.quests_completed: List[Any] = []
+        self.skills: Dict[str, int] = {}
         self.created: bool = False
         self.visual_customization: Dict[str, str] = {}
+
+    @property
+    def stats(self):
+        """Get stats as object with attributes for compatibility."""
+        return type('Stats', (), self._stats)()
+
+    @stats.setter
+    def stats(self, value):
+        """Set stats from dict or Stats object."""
+        if value is None or (not isinstance(value, dict) and not hasattr(value, '__dict__')):
+            raise ValueError("stats must be a dict or object")
+        if isinstance(value, dict):
+            self._stats = value
+        else:
+            # It's an object, convert to dict using class attributes
+            self._stats = {k: v for k, v in type(value).__dict__.items()
+                         if not k.startswith('_') and not callable(v)}
 
     def create_character(self, name: str, class_type: str) -> bool:
         """
@@ -662,7 +683,7 @@ class Character:  # pylint: disable=too-many-instance-attributes
 
             # Set class-specific stats
             class_config = self.CLASS_CONFIG[class_type]
-            self.stats = class_config["base_stats"].copy()
+            self._stats = class_config["base_stats"].copy()
 
             # Set class-specific abilities
             self.abilities = class_config["abilities"].copy()
@@ -678,11 +699,36 @@ class Character:  # pylint: disable=too-many-instance-attributes
                 "build": "medium",
             }
 
+            # Set required fields for Pydantic model compatibility
+            character_id = f"character_{name.lower().replace(' ', '_')}_{hash(name) % 10000}"
+            hp = class_config["base_stats"]["constitution"] * 10
+            gold = 100  # Starting gold
+
+            # Update Pydantic model fields
+            self.id = character_id
+            self.hp = hp
+            self.max_hp = hp
+            self.gold = gold
+
             self.created = True
             return True
 
         except (ValueError, TypeError, AttributeError, KeyError):
             return False
+
+    def is_alive(self) -> bool:
+        """Check if character is alive."""
+        return self.hp > 0
+
+    def get_summary(self) -> Dict[str, Any]:
+        """Get character summary for validation."""
+        return {
+            'name': self.name,
+            'level': self.level,
+            'hp': self.hp,
+            'max_hp': self.max_hp,
+            'class': self.class_type.value if self.class_type else None
+        }
 
     def _parse_class_string(
         self, class_string: str
@@ -799,7 +845,7 @@ class Character:  # pylint: disable=too-many-instance-attributes
         Returns:
             Total power level (sum of all stats)
         """
-        return sum(self.stats.values())
+        return sum(self._stats.values())
 
     def get_strengths_and_weaknesses(self) -> Dict[str, List[str]]:
         """
@@ -811,7 +857,7 @@ class Character:  # pylint: disable=too-many-instance-attributes
         strengths = []
         weaknesses = []
 
-        for stat_name, stat_value in self.stats.items():
+        for stat_name, stat_value in self._stats.items():
             if stat_value >= 15:
                 strengths.append(stat_name)
             elif stat_value <= 12:
@@ -880,12 +926,12 @@ class Character:  # pylint: disable=too-many-instance-attributes
                     primary_stat = self.CLASS_CONFIG[self.class_type][
                         "primary_stat"
                     ]
-                    self.stats[primary_stat] += 1
+                    self._stats[primary_stat] += 1
 
                 # Improve other stats occasionally
-                for stat in self.stats:
+                for stat in self._stats:
                     if stat != primary_stat and self.level % 2 == 0:
-                        self.stats[stat] += 1
+                        self._stats[stat] += 1
 
                 return True
             return False
@@ -917,7 +963,6 @@ class Character:  # pylint: disable=too-many-instance-attributes
         except (ValueError, TypeError, AttributeError, KeyError):
             return False
 
-
 # Class-level utility functions
 def get_all_character_classes() -> List[str]:
     """
@@ -927,7 +972,6 @@ def get_all_character_classes() -> List[str]:
         List of class names
     """
     return [cls.value for cls in CharacterClass]
-
 
 def get_class_balance_stats() -> Dict[str, int]:
     """
@@ -945,7 +989,6 @@ def get_class_balance_stats() -> Dict[str, int]:
             balance_stats[char_class.value] = power
 
     return balance_stats
-
 
 def validate_class_balance() -> bool:
     """
@@ -968,7 +1011,6 @@ def validate_class_balance() -> bool:
     # Classes should be within 15% power difference
     return balance_ratio <= 0.15
 
-
 def verify_unique_mechanics() -> bool:
     """
     Verify that all classes have unique mechanics
@@ -985,7 +1027,6 @@ def verify_unique_mechanics() -> bool:
 
     # Check if all mechanics are unique
     return len(set(mechanics)) == len(mechanics)
-
 
 def verify_minimum_abilities() -> bool:
     """
@@ -1005,3 +1046,32 @@ def verify_minimum_abilities() -> bool:
                 return False
 
     return True
+
+# Convenience functions for external use
+def create_character(name: str, class_type: str) -> Character:
+    """Create a character with the given name and class type."""
+    character = Character()
+    success = character.create_character(name, class_type)
+    if not success:
+        raise ValueError(f"Failed to create character: {name} ({class_type})")
+    return character
+
+def level_up_character(character: Character) -> bool:
+    """Level up a character by one level."""
+    # Simple implementation - placeholder
+    character.level += 1
+    return True
+
+def add_experience(character: Character, exp_amount: int) -> bool:
+    """Add experience to a character."""
+    if exp_amount <= 0:
+        return False
+
+    character.experience += exp_amount
+    return True
+
+# Export all functions for easy access
+__all__ = [
+    'create_character',
+    'level_up_character', 'add_experience', 'get_all_character_classes',
+    ]

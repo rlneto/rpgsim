@@ -537,7 +537,7 @@ def step_traveling_between_cities(context):
     step_player_selects_destination(context)
     step_initiate_travel(context)
 
-@when('journey is in progress')
+@when('journey events are in progress')
 def step_travel_in_progress_events(context):
     # Simulate journey progress
     travel = context.travel_details

@@ -439,12 +439,31 @@ def validate_damage_calculation(attacker: Character, defender: Union[Character, 
     Returns:
         bool: True if reasonable
     """
-    # Get damage multiplier for attacker's class
+    # Get damage multiplier for attacker's class/type
     from core.constants import DAMAGE_MULTIPLIERS
-    damage_mult = DAMAGE_MULTIPLIERS.get(attacker.class_type.value, 1.0)
+
+    # Handle both Character (class_type) and Enemy (type) objects
+    if hasattr(attacker, 'class_type') and attacker.class_type:
+        # Character object with enum
+        damage_mult = DAMAGE_MULTIPLIERS.get(attacker.class_type.value, 1.0)
+    elif hasattr(attacker, 'type'):
+        # Enemy object with string type
+        attacker_type = attacker.type.value if hasattr(attacker.type, 'value') else str(attacker.type)
+        damage_mult = DAMAGE_MULTIPLIERS.get(attacker_type, 1.0)
+    else:
+        damage_mult = 1.0
     
     # Calculate expected damage range
-    base_damage = attacker.stats.strength * damage_mult
+    if hasattr(attacker, 'stats') and hasattr(attacker.stats, 'strength'):
+        # Character object with stats
+        base_damage = attacker.stats.strength * damage_mult
+    elif hasattr(attacker, 'attack_power'):
+        # Enemy object with attack_power
+        base_damage = attacker.attack_power * damage_mult
+    else:
+        # Fallback
+        base_damage = 10 * damage_mult
+
     min_expected = base_damage * 0.5  # 50% of expected
     max_expected = base_damage * 2.0  # 200% of expected
     

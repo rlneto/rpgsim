@@ -627,9 +627,12 @@ ERROR_MESSAGES: Dict[str, str] = {
 # Explicit combat multipliers for deterministic agent calculations
 COMBAT_CONFIG = {
     "base_damage": 10,
+    "min_damage": 1,
+    "max_damage": 100,
     "critical_chance": 0.05,
     "miss_chance": 0.05,
     "defense_reduction_factor": 0.3,
+    "armor_absorption": 0.2,
     "max_combat_rounds": 50,
     "initiative_bonus_per_dex": 0.1
 }
@@ -638,7 +641,35 @@ COMBAT_FORMULAS = {
     "damage_formula": "base_damage * strength * multiplier - defense",
     "hp_formula": "base_hp + constitution * 5",
     "initiative_formula": "dexterity * 0.1 + random(1, 10)",
-    "defense_formula": "dexterity * 0.5"
+    "defense_formula": "dexterity * 0.5",
+    "physical_damage": {
+        "base_damage": 5,
+        "stat_multiplier": 0.5
+    },
+    "magical_damage": {
+        "base_damage": 3,
+        "stat_multiplier": 0.7
+    },
+    "hit_chance": {
+        "base_hit": 75,
+        "min_hit": 10,
+        "max_hit": 95
+    },
+    "dodge_chance": {
+        "base_dodge": 10,
+        "min_dodge": 5,
+        "max_dodge": 50
+    },
+    "critical_chance": {
+        "base_crit": 5,
+        "min_crit": 1,
+        "max_crit": 25
+    },
+    "block_chance": {
+        "base_block": 15,
+        "min_block": 5,
+        "max_block": 40
+    }
 }
 
 CRITICAL_MULTIPLIERS = {
