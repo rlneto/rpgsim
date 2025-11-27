@@ -508,7 +508,7 @@ Feature: Character Creation # features/character_creation.feature:2
 - **Testabilidade**: Módulos podem ser testados individualmente
 - **Extensibilidade**: Novos sistemas seguem padrão estabelecido
 
-**SESSION STATUS: SUCCESS - P1.1 15% completo**
+**SESSION STATUS: SUCCESS - P1.1 27% completo**
 
 ### **For AI Agent Starting Work**
 1. **READ**: "Quick Project Status" → Know where we are
@@ -1003,20 +1003,145 @@ stages:
 
 ### **🚀 PRÓXIMAS AÇÕES P1.1**
 
-#### **World System Services (IMEDIATO)**
-- Implementar `WorldService` com navegação e travel logic
-- Criar `TravelService` para cálculo de rotas e tempos
-- Implementar `LocationService` para gerenciamento de locais
+#### **✅ World System Services (COMPLETO)** ✅
+- ✅ Implementar `WorldService` com navegação e travel logic
+- ✅ Criar `TravelService` para cálculo de rotas e tempos
+- ✅ Implementar `LocationService` para gerenciamento de locais
 
-#### **World System Repositories (SEGUINTE)**
-- Implementar `WorldRepository` com data persistence
-- Criar `LocationRepository` para gestão de locais
-- Implementar `TravelConnectionRepository` para conexões
+#### **✅ World System Repositories (COMPLETO)** ✅
+- ✅ Implementar `WorldRepository` com data persistence
+- ✅ Criar `LocationRepository` para gestão de locais
+- ✅ Implementar `TravelConnectionRepository` para conexões
 
-#### **World System Facade (DEPOIS)**
-- Implementar `WorldSystem` facade com API unificada
-- Integrar com Character System para validações
-- Criar testes unitários para todos os componentes
+#### **✅ World System Facade (COMPLETO)** ✅
+- ✅ Implementar `WorldSystem` facade com API unificada
+- ✅ Integrar com Character System para validações
+- ✅ Criar testes unitários para todos os componentes
+
+#### **🔥 SISTEMAS MONOLÍTICOS RESTANTES (GRANDE PRIORIDADE)**
+
+**1. Shop System - CRÍTICO (17/35 testes falhando)**
+- **Arquivo Atual**: `core/systems/shop.py` (monolítico)
+- **Testes Afetados**: `tests/test_shop_system.py` - 18 falhas
+- **Módulos a Criar**:
+  - `core/systems/shop/domain/shop.py` - Shop, ShopItem, ShopEconomy, ShopKeeper
+  - `core/systems/shop/services/shop_service.py` - ShopCreationService, ShopInventoryService, ShopTransactionService
+  - `core/systems/shop/repositories/memory_repository.py` - ShopRepository, ItemRepository
+  - `core/systems/shop/interfaces/repositories.py` - Repository interfaces
+  - `core/systems/shop/facade.py` - ShopSystem facade
+- **Métodos Faltantes**: `process_transaction`, `calculate_buy_price`, `calculate_sell_price`
+- **Funções de Negócio**: Dynamic pricing, supply/demand, bulk discounts, reputation
+- **Estimativa**: 2-3 dias
+
+**2. Combat System - CRÍTICO (Core gameplay)**
+- **Arquivo Atual**: `core/systems/combat.py` (monolítico)
+- **Testes Afetados**: `tests/test_combat_system.py`, `tests/test_combat_boundary.py`
+- **Módulos a Criar**:
+  - `core/systems/combat/domain/combat.py` - Combat, Attack, Defense, CombatState, CombatLog
+  - `core/systems/combat/services/combat_service.py` - CombatService, DamageService, AITacticService
+  - `core/systems/combat/repositories/memory_repository.py` - CombatRepository, AttackRepository
+  - `core/systems/combat/interfaces/repositories.py` - Repository interfaces
+  - `core/systems/combat/facade.py` - CombatSystem facade
+- **Funcionalidades**: Turn-based combat, AI behavior, damage calculation, status effects
+- **Estimativa**: 3-4 dias
+
+**3. Equipment System - ALTA (Dependente Shop)**
+- **Arquivo Atual**: `core/systems/equipment.py` (monolítico)
+- **Testes Afetados**: `tests/test_equipment_system.py`
+- **Módulos a Criar**:
+  - `core/systems/equipment/domain/equipment.py` - Equipment, Item, Weapon, Armor, Accessory
+  - `core/systems/equipment/services/equipment_service.py` - EquipmentService, ItemService, EnchantmentService
+  - `core/systems/equipment/repositories/memory_repository.py` - EquipmentRepository, ItemRepository
+  - `core/systems/equipment/interfaces/repositories.py` - Repository interfaces
+  - `core/systems/equipment/facade.py` - EquipmentSystem facade
+- **Funcionalidades**: Item management, equipment effects, stat modifications, enchantments
+- **Estimativa**: 2-3 dias
+
+**4. Quest System - ALTA**
+- **Arquivo Atual**: `core/systems/quest.py` (monolítico)
+- **Testes Afetados**: `tests/test_quest_system.py`
+- **Módulos a Criar**:
+  - `core/systems/quest/domain/quest.py` - Quest, QuestStep, QuestReward, QuestState
+  - `core/systems/quest/services/quest_service.py` - QuestCreationService, QuestProgressService, QuestRewardService
+  - `core/systems/quest/repositories/memory_repository.py` - QuestRepository, QuestStepRepository
+  - `core/systems/quest/interfaces/repositories.py` - Repository interfaces
+  - `core/systems/quest/facade.py` - QuestSystem facade
+- **Funcionalidades**: Quest management, progress tracking, reward distribution, conditional logic
+- **Estimativa**: 2-3 dias
+
+**5. City Management System - MÉDIA**
+- **Arquivo Atual**: `core/systems/city_management.py` (monolítico)
+- **Testes Afetados**: `tests/test_city_management_system.py`
+- **Módulos a Criar**:
+  - `core/systems/city/domain/city.py` - City, CityService, Building, Population
+  - `core/systems/city/services/city_service.py` - CityCreationService, CityGrowthService, CityServiceService
+  - `core/systems/city/repositories/memory_repository.py` - CityRepository, BuildingRepository
+  - `core/systems/city/interfaces/repositories.py` - Repository interfaces
+  - `core/systems/city/facade.py` - CityManagementSystem facade
+- **Funcionalidades**: City growth, service management, population dynamics, economy simulation
+- **Estimativa**: 2 dias
+
+**6. Travel System - MÉDIA (Overlap com World)**
+- **Arquivo Atual**: `core/systems/travel.py` (monolítico)
+- **Testes Afetados**: `tests/test_travel_system.py`, `tests/test_navigation_system.py`
+- **Ação**: Integrar/consolidar com World System TravelService
+- **Migração**: Mover lógica de `travel.py` para `world/services/travel_service.py`
+- **Estimativa**: 1 dia
+
+**7. Gamification System - MÉDIA**
+- **Arquivo Atual**: `core/systems/gamification.py` (monolítico)
+- **Testes Afetados**: `tests/test_gamification_system.py`
+- **Módulos a Criar**:
+  - `core/systems/gamification/domain/gamification.py` - Achievement, Badge, Progress, Reward
+  - `core/systems/gamification/services/gamification_service.py` - AchievementService, ProgressService, RewardService
+  - `core/systems/gamification/repositories/memory_repository.py` - AchievementRepository, ProgressRepository
+  - `core/systems/gamification/interfaces/repositories.py` - Repository interfaces
+  - `core/systems/gamification/facade.py` - GamificationSystem facade
+- **Funcionalidades**: Achievement tracking, progress metrics, reward distribution, DDA
+- **Estimativa**: 2 dias
+
+**8. Dungeon System - BAIXA**
+- **Arquivo Atual**: `core/systems/dungeon.py` (monolítico)
+- **Testes Afetados**: `tests/test_dungeon_system.py`
+- **Módulos a Criar**:
+  - `core/systems/dungeon/domain/dungeon.py` - Dungeon, Room, Trap, Treasure
+  - `core/systems/dungeon/services/dungeon_service.py` - DungeonGenerationService, DungeonExplorationService
+  - `core/systems/dungeon/repositories/memory_repository.py` - DungeonRepository, RoomRepository
+  - `core/systems/dungeon/interfaces/repositories.py` - Repository interfaces
+  - `core/systems/dungeon/facade.py` - DungeonSystem facade
+- **Funcionalidades**: Procedural generation, exploration mechanics, trap systems, treasure distribution
+- **Estimativa**: 2-3 dias
+
+### **🔥 TESTES AFETADOS PELA REFAÇÃO**
+
+**P1.2 - Refatoração de Testes (APÓS SISTEMAS MONOLÍTICOS):**
+- **Testes Unitários**: TODOS os testes em `tests/` precisam ser atualizados
+- **Testes BDD**: `features/steps/*.py` precisam usar facades modulares
+- **Testes Hipótese**: Property tests para novos serviços modulares
+- **Testes E2E**: `tests/e2e/*.py` precisam usar nova arquitetura
+- **Cobertura**: Garantir >90% em TODOS os sistemas modulares
+- **Estimativa**: 2-3 dias
+
+### **📊 MÉTRICAS DE PROGRESSO ATUAL**
+
+**Sistemas Totais**: 11 sistemas principais
+**Sistemas Modularizados**: 3/11 (27%)
+- ✅ Character System (completo)
+- ✅ UI System (completo)  
+- ✅ World System (completo)
+
+**Sistemas Pendentes**: 8/11 (73%)
+- ❌ Shop System (crítico)
+- ❌ Combat System (crítico)
+- ❌ Equipment System (alta)
+- ❌ Quest System (alta)
+- ❌ City Management System (média)
+- ❌ Travel System (média)
+- ❌ Gamification System (média)
+- ❌ Dungeon System (baixa)
+
+**Estimativa Total P1.1**: 15-20 dias adicionais
+**Conclusão P1.1**: ~25-30 dias totais (incluindo Character, UI, World já feitos)
 
 ### **📋 BLOQUEIOS REMOVIDOS**
 
