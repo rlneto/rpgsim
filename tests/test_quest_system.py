@@ -1,736 +1,814 @@
 """
-Unit tests for quest system implementation
-Uses pytest with hypothesis for edge and boundary testing
+Unit tests for Quest System implementation
+Comprehensive test coverage for all Quest System components
 """
 
 import pytest
-from hypothesis import given, strategies as st
-from unittest.mock import MagicMock
-from game.quest import Quest, QuestGiver, QuestManager
-from tests.conftest import (
-    create_test_player, mock_player, mock_quest, mock_npc,
-    st_difficulty, st_item_quality
+from unittest.mock import Mock, patch
+from core.systems.quest import (
+    QuestType, QuestDifficulty, NPCPersonality, NPCQuirk,
+    QuestTemplate, NPCProfile, DialogueOption, DialogueResponse,
+    QuestProgress, QuestGenerator, NPCManager, DialogueManager,
+    QuestManager, QuestSystem
 )
 
 
-class TestQuest:
-    """Test quest functionality"""
-    
-    @pytest.mark.unit
-    def test_quest_creation_with_valid_data(self):
-        """Test that quests are created correctly with valid data"""
-        quest_data = {
-            'id': 'quest_test',
-            'name': 'Test Quest: The Missing Artifact',
-            'type': 'fetch',
-            'difficulty': 'medium',
-            'description': 'Find the missing artifact and return it safely',
-            'giver': 'npc_test',
-            'rewards': {
-                'experience': 500,
-                'gold': 200,
-                'items': ['item_test']
-            },
-            'objectives': [
-                {'description': 'Find the artifact', 'completed': False},
-                {'description': 'Return to quest giver', 'completed': False}
-            ],
-            'location': 'city_1'
-        }
-        
-        quest = Quest(**quest_data)
-        
-        assert quest.id == 'quest_test'
-        assert quest.name == 'Test Quest: The Missing Artifact'
-        assert quest.type == 'fetch'
-        assert quest.difficulty == 'medium'
-        assert quest.giver == 'npc_test'
-        assert quest.rewards == quest_data['rewards']
-        assert len(quest.objectives) == 2
-    
-    @pytest.mark.unit
-    def test_quest_objective_completion(self, mock_quest):
-        """Test that quest objectives can be marked as completed"""
-        # Initially no objectives should be completed
-        completed_count = sum(1 for obj in mock_quest.objectives if obj['completed'])
-        assert completed_count == 0
-        
-        # Complete first objective
-        mock_quest.complete_objective('Find the artifact')
-        
-        completed_count = sum(1 for obj in mock_quest.objectives if obj['completed'])
-        assert completed_count == 1
-        
-        # Complete second objective
-        mock_quest.complete_objective('Return to quest giver')
-        
-        completed_count = sum(1 for obj in mock_quest.objectives if obj['completed'])
-        assert completed_count == 2
-    
-    @pytest.mark.unit
-    def test_quest_completion_check(self, mock_quest):
-        """Test that quest completion is detected correctly"""
-        # Initially quest should not be completed
-        assert not mock_quest.is_completed()
-        
-        # Complete one objective
-        mock_quest.complete_objective('Find the artifact')
-        assert not mock_quest.is_completed()
-        
-        # Complete all objectives
-        mock_quest.complete_objective('Return to quest giver')
-        assert mock_quest.is_completed()
-    
-    @pytest.mark.unit
-    def test_quest_rewards_scaling(self, mock_quest):
-        """Test that quest rewards scale with difficulty"""
-        # Test different difficulty levels
-        difficulties = ['trivial', 'easy', 'medium', 'hard', 'very hard', 'epic']
-        quest_rewards = {}
-        
-        for difficulty in difficulties:
-            quest = Quest(
-                id=f'quest_{difficulty}',
-                name=f'Test Quest {difficulty}',
-                type='fetch',
-                difficulty=difficulty,
-                description='Test quest',
-                giver='test_npc',
-                rewards={},
-                objectives=[{'description': 'Test objective', 'completed': False}],
-                location='test_location'
-            )
-            
-            quest_rewards[difficulty] = quest.get_scaled_rewards()
-        
-        # Higher difficulty should give better rewards
-        assert quest_rewards['epic']['experience'] > quest_rewards['trivial']['experience']
-        assert quest_rewards['epic']['gold'] > quest_rewards['trivial']['gold']
-        assert len(quest_rewards['epic']['items']) >= len(quest_rewards['trivial']['items'])
-    
-    @pytest.mark.unit
-    @given(st.text(min_size=1, max_size=50), st_difficulty)
-    def test_quest_creation_with_various_difficulties(self, name, difficulty):
-        """Test quest creation with various difficulty levels"""
-        quest = Quest(
-            id='test_quest',
-            name=name,
-            type='fetch',
-            difficulty=difficulty,
-            description='Test quest',
-            giver='test_npc',
-            rewards={'experience': 100, 'gold': 50},
-            objectives=[{'description': 'Test objective', 'completed': False}],
-            location='test_location'
-        )
-        
-        assert quest.name == name
-        assert quest.difficulty == difficulty
-    
-    @pytest.mark.unit
-    def test_quest_types(self):
-        """Test that different quest types exist"""
-        quest_types = ['fetch', 'kill', 'escort', 'explore', 'deliver', 'protect', 'solve', 'rescue']
-        
-        for quest_type in quest_types:
-            quest = Quest(
-                id=f'quest_{quest_type}',
-                name=f'Test {quest_type} quest',
-                type=quest_type,
-                difficulty='medium',
-                description='Test quest',
-                giver='test_npc',
-                rewards={'experience': 100, 'gold': 50},
-                objectives=[{'description': 'Test objective', 'completed': False}],
-                location='test_location'
-            )
-            
-            assert quest.type == quest_type
-    
-    @pytest.mark.unit
-    @given(st.lists(st.text(min_size=1, max_size=50), min_size=1, max_size=5))
-    def test_quest_objectives_with_various_counts(self, objectives):
-        """Test quests with varying numbers of objectives"""
-        quest_objectives = [
-            {'description': desc, 'completed': False}
-            for desc in objectives
+class TestQuestConstants:
+    """Test quest system constants and enums"""
+
+    def test_quest_type_constants(self):
+        """Test QuestType class constants"""
+        assert QuestType.KILL == "kill"
+        assert QuestType.FETCH == "fetch"
+        assert QuestType.ESCORT == "escort"
+        assert QuestType.EXPLORE == "explore"
+        # Check that we have multiple quest types
+        quest_types = [
+            QuestType.KILL, QuestType.FETCH, QuestType.ESCORT, QuestType.EXPLORE,
+            QuestType.DELIVER, QuestType.PROTECT, QuestType.SOLVE, QuestType.RESCUE
         ]
-        
-        quest = Quest(
-            id='test_quest',
-            name='Test Quest',
-            type='fetch',
-            difficulty='medium',
-            description='Test quest',
-            giver='test_npc',
-            rewards={'experience': 100, 'gold': 50},
-            objectives=quest_objectives,
-            location='test_location'
-        )
-        
-        assert len(quest.objectives) == len(objectives)
-    
-    @pytest.mark.unit
-    def test_quest_prerequisites(self):
-        """Test quest prerequisites system"""
-        main_quest = Quest(
-            id='main_quest',
-            name='Main Quest',
-            type='fetch',
-            difficulty='hard',
-            description='Main quest',
-            giver='king_npc',
-            rewards={'experience': 1000, 'gold': 500},
-            objectives=[{'description': 'Complete main objective', 'completed': False}],
-            location='throne_room',
-            prerequisites=['intro_quest']
-        )
-        
-        # Quest should not be available without completing prerequisites
-        player = create_test_player("Warrior", 5)
-        player.quests['completed'] = []
-        
-        assert not main_quest.is_available(player)
-        
-        # Make quest available after completing prerequisite
-        player.quests['completed'].append('intro_quest')
-        
-        assert main_quest.is_available(player)
-    
-    @pytest.mark.unit
-    def test_quest_time_limits(self):
-        """Test quest time limit functionality"""
-        quest = Quest(
-            id='timed_quest',
-            name='Timed Quest',
-            type='fetch',
-            difficulty='medium',
-            description='Timed quest',
-            giver='test_npc',
-            rewards={'experience': 100, 'gold': 50},
-            objectives=[{'description': 'Complete in time', 'completed': False}],
-            location='test_location',
-            time_limit=24  # 24 hours
-        )
-        
-        # Should have time remaining
-        assert quest.time_remaining() > 0
-        
-        # Should expire after time limit
-        quest.start_time = quest.start_time - 25 * 3600  # 25 hours ago
-        assert quest.time_remaining() < 0
-    
-    @pytest.mark.unit
-    @given(st.integers(min_value=-100, max_value=100))
-    def test_quest_reputation_requirements(self, reputation):
-        """Test quest reputation requirements"""
-        quest = Quest(
-            id='reputation_quest',
-            name='Reputation Quest',
-            type='fetch',
-            difficulty='medium',
-            description='Reputation quest',
-            giver='test_npc',
-            rewards={'experience': 100, 'gold': 50},
-            objectives=[{'description': 'Complete objective', 'completed': False}],
-            location='test_location',
-            reputation_required=50
-        )
-        
-        player = create_test_player("Warrior", 5)
-        player.reputation = {'TestCity': reputation, 'World': 0}
-        
-        if reputation >= 50:
-            assert quest.is_available(player)
-        else:
-            assert not quest.is_available(player)
+        assert len(quest_types) == 8
+
+    def test_quest_difficulty_constants(self):
+        """Test QuestDifficulty class constants"""
+        assert QuestDifficulty.TRIVIAL == "trivial"
+        assert QuestDifficulty.EPIC == "epic"
+        # Check that we have multiple difficulty levels
+        difficulties = [
+            QuestDifficulty.TRIVIAL, QuestDifficulty.EASY, QuestDifficulty.MEDIUM,
+            QuestDifficulty.HARD, QuestDifficulty.VERY_HARD, QuestDifficulty.EPIC
+        ]
+        assert len(difficulties) == 6
+
+    def test_npc_personality_constants(self):
+        """Test NPCPersonality class constants"""
+        assert NPCPersonality.FRIENDLY == "friendly"
+        assert NPCPersonality.MYSTERIOUS == "mysterious"
+        # Check that we have multiple personality types
+        personalities = [
+            NPCPersonality.FRIENDLY, NPCPersonality.GRUMPY, NPCPersonality.MYSTERIOUS,
+            NPCPersonality.BOASTFUL, NPCPersonality.HUMBLE, NPCPersonality.WISE,
+            NPCPersonality.CUNNING, NPCPersonality.CHAOTIC, NPCPersonality.NOBLE, NPCPersonality.MISCHIEVOUS
+        ]
+        assert len(personalities) == 10
+
+    def test_npc_quirk_constants(self):
+        """Test NPCQuirk class constants"""
+        assert NPCQuirk.STUTTERS == "stutters"
+        assert NPCQuirk.RHYMES == "rhymes"
+        # Check that we have multiple quirk types
+        quirks = [
+            NPCQuirk.STUTTERS, NPCQuirk.RHYMES, NPCQuirk.USES_ANCIENT_WORDS,
+            NPCQuirk.SPEAKS_IN_RIDDLES, NPCQuirk.ALWAYS_HUNGRY, NPCQuirk.COLLECTS_THINGS,
+            NPCQuirk.OVERLY_DRAMATIC, NPCQuirk.SPEAKS_IN_THIRD_PERSON, NPCQuirk.HAS_PET, NPCQuirk.SINGS_RESPONSES
+        ]
+        assert len(quirks) == 10
 
 
-class TestQuestGiver:
-    """Test quest giver functionality"""
+class TestQuestDataClasses:
+    """Test quest system dataclasses"""
+
+    def test_quest_template_creation(self):
+        """Test QuestTemplate dataclass creation"""
+        template = QuestTemplate(
+            name_template="Test {target}",
+            description_template="Test description {target}",
+            objective_templates=["Test {target}"],
+            quest_type=QuestType.KILL,
+            base_difficulty=QuestDifficulty.MEDIUM,
+            reward_multipliers={"experience": 1.0, "gold": 1.0}
+        )
+
+        assert template.name_template == "Test {target}"
+        assert template.quest_type == QuestType.KILL
+        assert template.base_difficulty == QuestDifficulty.MEDIUM
+        assert template.reward_multipliers["experience"] == 1.0
+
     
-    @pytest.mark.unit
-    def test_quest_giver_creation(self, mock_npc):
-        """Test that quest givers are created correctly"""
-        quest_giver = QuestGiver(mock_npc)
-        
-        assert quest_giver.id == mock_npc.id
-        assert quest_giver.name == mock_npc.name
-        assert quest_giver.location == mock_npc.location
-        assert quest_giver.personality == mock_npc.personality
-        assert quest_giver.quirks == mock_npc.quirks
+    def test_npc_profile_creation(self):
+        """Test NPCProfile dataclass creation"""
+        profile = NPCProfile(
+            npc_id="npc_001",
+            name="Test NPC",
+            location="test_location",
+            personality=NPCPersonality.FRIENDLY,
+            quirk=NPCQuirk.NONE,
+            specialties=["combat"],
+            relationships={},
+            daily_schedule={},
+            secrets=[]
+        )
+
+        assert profile.npc_id == "npc_001"
+        assert profile.name == "Test NPC"
+        assert profile.personality == NPCPersonality.FRIENDLY
+        assert profile.specialties == ["combat"]
+
     
-    @pytest.mark.unit
-    def test_quest_giver_offers_quests(self):
-        """Test that quest givers can offer quests"""
-        quest_data = {
-            'id': 'quest_test',
-            'name': 'Test Quest',
-            'type': 'fetch',
-            'difficulty': 'medium',
-            'description': 'Test quest',
-            'giver': 'npc_test',
-            'rewards': {'experience': 100, 'gold': 50},
-            'objectives': [{'description': 'Test objective', 'completed': False}],
-            'location': 'test_location'
-        }
-        
-        quest = Quest(**quest_data)
-        quest_giver = QuestGiver(mock_npc)
-        quest_giver.add_quest(quest)
-        
-        assert quest in quest_giver.available_quests
+    def test_dialogue_option_creation(self):
+        """Test DialogueOption dataclass creation"""
+        option = DialogueOption(
+            text="Hello",
+            requirements={"reputation": 0},
+            responses=["Greetings"]
+        )
+
+        assert option.text == "Hello"
+        assert option.requirements["reputation"] == 0
+        assert option.responses == ["Greetings"]
+
     
-    @pytest.mark.unit
-    def test_quest_giver_dialogue_generation(self):
-        """Test that quest givers generate appropriate dialogue"""
-        quest_giver = QuestGiver(mock_npc)
-        
-        dialogue = quest_giver.generate_dialogue('greeting')
-        
-        assert 'greeting' in dialogue.lower()
-        assert len(dialogue) > 10  # Reasonable dialogue length
+    def test_dialogue_response_creation(self):
+        """Test DialogueResponse dataclass creation"""
+        response = DialogueResponse(
+            text="Hello there!",
+            npc_reaction="friendly",
+            quest_unlock=None,
+            reputation_change=0
+        )
+
+        assert response.text == "Hello there!"
+        assert response.npc_reaction == "friendly"
+        assert response.reputation_change == 0
+
     
-    @pytest.mark.unit
-    def test_quest_giver_dialogue_by_personality(self):
-        """Test that quest giver dialogue matches personality"""
-        personality_types = ['friendly', 'grumpy', 'mysterious', 'boastful', 'humble']
-        
-        for personality in personality_types:
-            npc_data = MagicMock()
-            npc_data.id = f'npc_{personality}'
-            npc_data.name = f'NPC {personality}'
-            npc_data.location = 'test_location'
-            npc_data.personality = personality
-            npc_data.quirks = 'none'
-            
-            quest_giver = QuestGiver(npc_data)
-            dialogue = quest_giver.generate_dialogue('quest_offer')
-            
-            assert len(dialogue) > 10
-            
-            # Friendly personality should have positive tone
-            if personality == 'friendly':
-                assert any(word in dialogue.lower() for word in ['help', 'please', 'thank', 'welcome'])
-            
-            # Grumpy personality should have negative tone
-            elif personality == 'grumpy':
-                assert any(word in dialogue.lower() for word in ['hurry', 'bother', 'busy'])
+    def test_quest_progress_creation(self):
+        """Test QuestProgress dataclass creation"""
+        progress = QuestProgress(
+            quest_id="quest_001",
+            player_id="player_001",
+            status="active",
+            progress={},
+            completion_date=None
+        )
+
+        assert progress.quest_id == "quest_001"
+        assert progress.status == "active"
+        assert progress.completion_date is None
+
+
+class TestQuestGenerator:
+    """Test QuestGenerator class"""
+
     
-    @pytest.mark.unit
-    def test_quest_giver_responses_to_reputation(self):
-        """Test that quest givers respond to player reputation"""
-        quest_giver = QuestGiver(mock_npc)
-        
-        # Test with low reputation
-        player_low = create_test_player("Warrior", 5)
-        player_low.reputation = {'TestCity': -20, 'World': -10}
-        
-        dialogue_low = quest_giver.generate_dialogue_by_reputation(player_low)
-        
-        # Test with high reputation
-        player_high = create_test_player("Warrior", 5)
-        player_high.reputation = {'TestCity': 80, 'World': 50}
-        
-        dialogue_high = quest_giver.generate_dialogue_by_reputation(player_high)
-        
-        # Dialogues should be different
-        assert dialogue_low != dialogue_high
+    def test_generate_quest_kill_type(self):
+        """Test generating a KILL type quest"""
+        generator = QuestGenerator()
+        quest = generator.generate_quest(
+            quest_id="test_quest_001",
+            quest_type=QuestType.KILL,
+            difficulty=QuestDifficulty.MEDIUM,
+            giver="Test_Giver"
+        )
+
+        assert quest.quest_type == QuestType.KILL
+        assert quest.difficulty == QuestDifficulty.MEDIUM
+        assert "Defeat" in quest.name
+        assert quest.giver == "Test_Giver"
+        assert quest.objectives
+        assert quest.rewards
+
     
-    @pytest.mark.unit
-    def test_quest_giver_responses_to_class(self):
-        """Test that quest givers respond to player class"""
-        quest_giver = QuestGiver(mock_npc)
-        
-        class_types = ['Warrior', 'Mage', 'Rogue']
-        dialogues = {}
-        
-        for class_type in class_types:
-            player = create_test_player(class_type, 5)
-            dialogue = quest_giver.generate_dialogue_by_class(player)
-            dialogues[class_type] = dialogue
-        
-        # Different classes should get different dialogues
-        assert dialogues['Warrior'] != dialogues['Mage']
-        assert dialogues['Mage'] != dialogues['Rogue']
-        assert dialogues['Warrior'] != dialogues['Rogue']
+    def test_generate_quest_fetch_type(self):
+        """Test generating a FETCH type quest"""
+        generator = QuestGenerator()
+        quest = generator.generate_quest(
+            quest_type=QuestType.FETCH,
+            difficulty=QuestDifficulty.EASY,
+            location="Test Cave"
+        )
+
+        assert quest.quest_type == QuestType.FETCH
+        assert quest.difficulty == QuestDifficulty.EASY
+        assert "Retrieve" in quest.name
+        assert quest.location == "Test Cave"
+
     
-    @pytest.mark.unit
-    def test_quest_giver_remembers_completed_quests(self):
-        """Test that quest givers remember completed quests"""
-        quest_giver = QuestGiver(mock_npc)
-        
-        quest_data = {
-            'id': 'quest_test',
-            'name': 'Test Quest',
-            'type': 'fetch',
-            'difficulty': 'medium',
-            'description': 'Test quest',
-            'giver': 'npc_test',
-            'rewards': {'experience': 100, 'gold': 50},
-            'objectives': [{'description': 'Test objective', 'completed': False}],
-            'location': 'test_location'
-        }
-        
-        quest = Quest(**quest_data)
-        quest_giver.add_quest(quest)
-        quest_giver.complete_quest('quest_test')
-        
-        # Quest should move from available to completed
-        assert quest not in quest_giver.available_quests
-        assert 'quest_test' in quest_giver.completed_quests
+    def test_generate_quest_escort_type(self):
+        """Test generating an ESCORT type quest"""
+        generator = QuestGenerator()
+        quest = generator.generate_quest(
+            quest_type=QuestType.ESCORT,
+            difficulty=QuestDifficulty.HARD,
+            location="Test Mountains"
+        )
+
+        assert quest.quest_type == QuestType.ESCORT
+        assert quest.difficulty == QuestDifficulty.HARD
+        assert "Escort" in quest.name
+        assert quest.location == "Test Mountains"
+
+    
+    def test_generate_quest_explore_type(self):
+        """Test generating an EXPLORE type quest"""
+        generator = QuestGenerator()
+        quest = generator.generate_quest(
+            quest_type=QuestType.EXPLORE,
+            difficulty=QuestDifficulty.MEDIUM,
+            location="Test Ruins"
+        )
+
+        assert quest.quest_type == QuestType.EXPLORE
+        assert "Explore" in quest.name
+        assert quest.location == "Test Ruins"
+
+    
+    def test_difficulty_reward_scaling(self):
+        """Test that quest rewards scale with difficulty"""
+        generator = QuestGenerator()
+
+        trivial_quest = generator.generate_quest(
+            quest_type=QuestType.KILL,
+            difficulty=QuestDifficulty.TRIVIAL,
+            location="Test"
+        )
+
+        epic_quest = generator.generate_quest(
+            quest_type=QuestType.KILL,
+            difficulty=QuestDifficulty.EPIC,
+            location="Test"
+        )
+
+        # Epic should have significantly higher rewards
+        assert epic_quest.rewards["experience"] > trivial_quest.rewards["experience"]
+        assert epic_quest.rewards["gold"] > trivial_quest.rewards["gold"]
+
+    
+    def test_quest_objective_generation(self):
+        """Test quest objectives are properly generated"""
+        generator = QuestGenerator()
+        quest = generator.generate_quest(
+            quest_type=QuestType.KILL,
+            difficulty=QuestDifficulty.MEDIUM,
+            location="Test"
+        )
+
+        assert len(quest.objectives) >= 1
+        for objective in quest.objectives:
+            assert hasattr(objective, 'description')
+            assert hasattr(objective, 'target_count')
+            assert hasattr(objective, 'current_count')
+            assert hasattr(objective, 'completed')
+
+    
+    def test_unique_quest_generation(self):
+        """Test that generated quests have unique IDs"""
+        generator = QuestGenerator()
+        quests = [
+            generator.generate_quest(
+                quest_type=QuestType.KILL,
+                difficulty=QuestDifficulty.MEDIUM,
+                location=f"Location_{i}"
+            )
+            for i in range(10)
+        ]
+
+        quest_ids = [quest.quest_id for quest in quests]
+        assert len(set(quest_ids)) == 10  # All unique
+
+
+class TestNPCManager:
+    """Test NPCManager class"""
+
+    
+    def test_create_npc_profile(self):
+        """Test creating an NPC profile"""
+        manager = NPCManager()
+        npc = manager.create_npc_profile(
+            npc_id="npc_001",
+            name="Test NPC",
+            location="Test Town"
+        )
+
+        assert npc.npc_id == "npc_001"
+        assert npc.name == "Test NPC"
+        assert npc.location == "Test Town"
+        assert npc.personality in NPCPersonality
+        assert npc.quirk in NPCQuirk
+
+    
+    def test_generate_npcs_batch(self):
+        """Test generating multiple NPCs"""
+        manager = NPCManager()
+        npcs = manager.generate_npcs(count=10, locations=["Test Town", "Test Forest"])
+
+        assert len(npcs) == 10
+        for npc in npcs:
+            assert hasattr(npc, 'npc_id')
+            assert hasattr(npc, 'name')
+            assert hasattr(npc, 'personality')
+            assert hasattr(npc, 'quirk')
+
+    
+    def test_npc_location_distribution(self):
+        """Test NPCs are distributed across locations"""
+        locations = ["Town", "Forest", "Mountains", "Cave"]
+        manager = NPCManager()
+        npcs = manager.generate_npcs(count=100, locations=locations)
+
+        location_counts = {}
+        for npc in npcs:
+            location_counts[npc.location] = location_counts.get(npc.location, 0) + 1
+
+        # Should have NPCs in all locations
+        assert len(location_counts) >= 3
+
+    
+    def test_npc_personality_variety(self):
+        """Test NPCs have variety of personalities"""
+        manager = NPCManager()
+        npcs = manager.generate_npcs(count=20)
+
+        personalities = set(npc.personality for npc in npcs)
+        assert len(personalities) >= 3  # Should have variety
+
+    
+    def test_npc_quirk_distribution(self):
+        """Test NPCs have various quirks"""
+        manager = NPCManager()
+        npcs = manager.generate_npcs(count=20)
+
+        quirks = set(npc.quirk for npc in npcs)
+        assert len(quirks) >= 2  # Should have variety
+
+    
+    def test_get_npc_by_id(self):
+        """Test retrieving NPC by ID"""
+        manager = NPCManager()
+        npcs = manager.generate_npcs(count=5)
+
+        test_npc = npcs[0]
+        found_npc = manager.get_npc_by_id(test_npc.npc_id)
+
+        assert found_npc is not None
+        assert found_npc.npc_id == test_npc.npc_id
+
+    
+    def test_get_npcs_by_location(self):
+        """Test retrieving NPCs by location"""
+        manager = NPCManager()
+        npcs = manager.generate_npcs(count=10, locations=["Test Town"])
+
+        town_npcs = manager.get_npcs_by_location("Test Town")
+
+        assert len(town_npcs) >= 1
+        for npc in town_npcs:
+            assert npc.location == "Test Town"
+
+    
+    def test_npc_specialties(self):
+        """Test NPCs have appropriate specialties"""
+        manager = NPCManager()
+        npc = manager.create_npc_profile(
+            npc_id="npc_001",
+            name="Test NPC",
+            location="Test Town"
+        )
+
+        assert isinstance(npc.specialties, list)
+        if npc.specialties:
+            for specialty in npc.specialties:
+                assert isinstance(specialty, str)
+
+    
+    def test_npc_relationships(self):
+        """Test NPC relationships system"""
+        manager = NPCManager()
+        npcs = manager.generate_npcs(count=5)
+
+        for npc in npcs:
+            assert isinstance(npc.relationships, dict)
+            # Check if relationships have valid structure
+            for related_npc, relationship in npc.relationships.items():
+                assert isinstance(related_npc, str)
+                assert isinstance(relationship, str)
+
+    
+    def test_npc_secrets(self):
+        """Test NPC secrets system"""
+        manager = NPCManager()
+        npc = manager.create_npc_profile(
+            npc_id="npc_001",
+            name="Test NPC",
+            location="Test Town"
+        )
+
+        assert isinstance(npc.secrets, list)
+        for secret in npc.secrets:
+            assert isinstance(secret, str)
+
+
+class TestDialogueManager:
+    """Test DialogueManager class"""
+
+    
+    def test_generate_class_dialogue_options_warrior(self):
+        """Test generating dialogue options for Warrior class"""
+        manager = DialogueManager()
+        options = manager.generate_class_dialogue_options("Warrior")
+
+        assert len(options) > 0
+        assert any("combat" in option.text.lower() or "fight" in option.text.lower()
+                  for option in options)
+
+    
+    def test_generate_class_dialogue_options_mage(self):
+        """Test generating dialogue options for Mage class"""
+        manager = DialogueManager()
+        options = manager.generate_class_dialogue_options("Mage")
+
+        assert len(options) > 0
+        assert any("magic" in option.text.lower() or "arcane" in option.text.lower()
+                  for option in options)
+
+    
+    def test_generate_reputation_dialogue_high_rep(self):
+        """Test generating dialogue options for high reputation"""
+        manager = DialogueManager()
+        options = manager.generate_reputation_dialogue_options(75)
+
+        assert len(options) > 0
+        # High reputation should unlock special options
+        assert any(option.requirements.get("reputation", 0) >= 50
+                  for option in options)
+
+    
+    def test_generate_reputation_dialogue_low_rep(self):
+        """Test generating dialogue options for low reputation"""
+        manager = DialogueManager()
+        options = manager.generate_reputation_dialogue_options(-25)
+
+        assert len(options) >= 0  # May be empty for very low reputation
+
+    
+    def test_generate_quest_dialogue_options(self):
+        """Test generating quest-related dialogue options"""
+        manager = DialogueManager()
+        mock_quests = [
+            Mock(quest_id="quest_001", status="active"),
+            Mock(quest_id="quest_002", status="completed")
+        ]
+
+        options = manager.generate_quest_dialogue_options(mock_quests)
+
+        assert len(options) > 0
+        # Should have options related to active quests
+        assert any("quest" in option.text.lower() for option in options)
+
+    
+    def test_generate_npc_response_friendly(self):
+        """Test generating NPC response for friendly personality"""
+        manager = DialogueManager()
+        npc_profile = Mock(
+            personality=NPCPersonality.FRIENDLY,
+            quirk=NPCQuirk.NONE
+        )
+
+        response = manager.generate_npc_response(
+            npc_profile=npc_profile,
+            player_input="Hello",
+            player_reputation=50
+        )
+
+        assert response.text
+        assert response.npc_reaction in ["friendly", "neutral", "positive"]
+
+    
+    def test_generate_npc_response_grumpy(self):
+        """Test generating NPC response for grumpy personality"""
+        manager = DialogueManager()
+        npc_profile = Mock(
+            personality=NPCPersonality.GRUMPY,
+            quirk=NPCQuirk.NONE
+        )
+
+        response = manager.generate_npc_response(
+            npc_profile=npc_profile,
+            player_input="Hello",
+            player_reputation=50
+        )
+
+        assert response.text
+        assert response.npc_reaction in ["grumpy", "negative", "neutral"]
+
+    
+    def test_apply_speech_quirk_stutters(self):
+        """Test applying stutter quirk to dialogue"""
+        manager = DialogueManager()
+        original = "Hello there traveler"
+        modified = manager.apply_speech_quirk(original, NPCQuirk.STUTTERS)
+
+        assert modified != original
+        # Should contain stutter pattern
+        assert "st-" in modified or "he-" in modified or "th-" in modified
+
+    
+    def test_apply_speech_quirk_rhymes(self):
+        """Test applying rhyme quirk to dialogue"""
+        manager = DialogueManager()
+        original = "Hello there"
+        modified = manager.apply_speech_quirk(original, NPCQuirk.RHYMES)
+
+        assert modified != original
+        # Should end with rhyme phrase
+        assert modified.endswith("see") or modified.endswith("be") or modified.endswith("free")
+
+    
+    def test_get_all_dialogue_options(self):
+        """Test getting all dialogue options for player"""
+        manager = DialogueManager()
+        npc_profile = Mock(
+            personality=NPCPersonality.FRIENDLY,
+            quirk=NPCQuirk.NONE,
+            specialties=["combat"]
+        )
+
+        options = manager.get_all_dialogue_options(
+            npc_profile=npc_profile,
+            player_class="Warrior",
+            player_reputation=50,
+            player_quests=[Mock(status="active")]
+        )
+
+        assert len(options) > 0
+        # Should include base options
+        assert any(option.text == "Hello" for option in options)
 
 
 class TestQuestManager:
-    """Test quest manager functionality"""
+    """Test QuestManager class"""
+
     
-    @pytest.mark.unit
-    def test_quest_manager_creation(self):
-        """Test that quest manager is created correctly"""
-        quest_manager = QuestManager()
-        
-        assert quest_manager.active_quests == []
-        assert quest_manager.completed_quests == []
-        assert quest_manager.available_quests == []
-    
-    @pytest.mark.unit
-    def test_quest_manager_adds_quests(self):
-        """Test that quest manager can add quests"""
-        quest_manager = QuestManager()
-        
-        quest_data = {
-            'id': 'quest_test',
-            'name': 'Test Quest',
-            'type': 'fetch',
-            'difficulty': 'medium',
-            'description': 'Test quest',
-            'giver': 'npc_test',
-            'rewards': {'experience': 100, 'gold': 50},
-            'objectives': [{'description': 'Test objective', 'completed': False}],
-            'location': 'test_location'
-        }
-        
-        quest = Quest(**quest_data)
-        quest_manager.add_quest(quest)
-        
-        assert quest in quest_manager.available_quests
-    
-    @pytest.mark.unit
-    def test_quest_manager_start_quest(self):
-        """Test that quest manager can start quests"""
-        quest_manager = QuestManager()
-        player = create_test_player("Warrior", 5)
-        
-        quest_data = {
-            'id': 'quest_test',
-            'name': 'Test Quest',
-            'type': 'fetch',
-            'difficulty': 'medium',
-            'description': 'Test quest',
-            'giver': 'npc_test',
-            'rewards': {'experience': 100, 'gold': 50},
-            'objectives': [{'description': 'Test objective', 'completed': False}],
-            'location': 'test_location'
-        }
-        
-        quest = Quest(**quest_data)
-        quest_manager.add_quest(quest)
-        
-        result = quest_manager.start_quest('quest_test', player)
-        
-        assert result is True
-        assert quest not in quest_manager.available_quests
-        assert quest in quest_manager.active_quests
-        assert 'quest_test' in player.quests['active']
-    
-    @pytest.mark.unit
-    def test_quest_manager_complete_quest(self):
-        """Test that quest manager can complete quests"""
-        quest_manager = QuestManager()
-        player = create_test_player("Warrior", 5)
-        
-        quest_data = {
-            'id': 'quest_test',
-            'name': 'Test Quest',
-            'type': 'fetch',
-            'difficulty': 'medium',
-            'description': 'Test quest',
-            'giver': 'npc_test',
-            'rewards': {
-                'experience': 500,
-                'gold': 200,
-                'items': ['item_test']
-            },
-            'objectives': [
-                {'description': 'Objective 1', 'completed': True},
-                {'description': 'Objective 2', 'completed': True}
-            ],
-            'location': 'test_location'
-        }
-        
-        quest = Quest(**quest_data)
-        quest_manager.active_quests = [quest]
-        
-        # Track initial stats
-        initial_exp = player.experience
-        initial_gold = player.gold
-        initial_items = len(player.inventory)
-        
-        result = quest_manager.complete_quest('quest_test', player)
-        
-        assert result is True
-        assert quest not in quest_manager.active_quests
-        assert quest in quest_manager.completed_quests
-        assert 'quest_test' in player.quests['completed']
-        
-        # Check rewards were applied
-        assert player.experience == initial_exp + quest.rewards['experience']
-        assert player.gold == initial_gold + quest.rewards['gold']
-        assert len(player.inventory) >= initial_items + len(quest.rewards['items'])
-    
-    @pytest.mark.unit
-    def test_quest_manager_filters_available_quests(self):
-        """Test that quest manager filters available quests by player status"""
-        quest_manager = QuestManager()
-        player = create_test_player("Warrior", 5)
-        
-        # Add quests with different requirements
-        quest_easy = Quest(
-            id='quest_easy',
-            name='Easy Quest',
-            type='fetch',
-            difficulty='easy',
-            description='Easy quest',
-            giver='npc_easy',
-            rewards={'experience': 50, 'gold': 25},
-            objectives=[{'description': 'Easy objective', 'completed': False}],
-            location='test_location',
-            level_required=1
+    def test_start_quest(self):
+        """Test starting a quest"""
+        manager = QuestManager()
+        quest = Mock(
+            quest_id="quest_001",
+            objectives=[Mock(description="Kill something", completed=False)]
         )
-        
-        quest_hard = Quest(
-            id='quest_hard',
-            name='Hard Quest',
-            type='fetch',
-            difficulty='hard',
-            description='Hard quest',
-            giver='npc_hard',
-            rewards={'experience': 1000, 'gold': 500},
-            objectives=[{'description': 'Hard objective', 'completed': False}],
-            location='test_location',
-            level_required=10
+
+        progress = manager.start_quest("player_001", quest)
+
+        assert progress.quest_id == "quest_001"
+        assert progress.player_id == "player_001"
+        assert progress.status == "active"
+        assert len(progress.objectives) == len(quest.objectives)
+
+    
+    def test_update_quest_progress(self):
+        """Test updating quest progress"""
+        manager = QuestManager()
+        quest = Mock(
+            quest_id="quest_001",
+            objectives=[
+                Mock(description="Kill 5 goblins", completed=False),
+                Mock(description="Find treasure", completed=False)
+            ]
         )
-        
-        quest_rep = Quest(
-            id='quest_rep',
-            name='Reputation Quest',
-            type='fetch',
-            difficulty='medium',
-            description='Reputation quest',
-            giver='npc_rep',
-            rewards={'experience': 200, 'gold': 100},
-            objectives=[{'description': 'Reputation objective', 'completed': False}],
-            location='test_location',
-            reputation_required=50
+
+        progress = manager.start_quest("player_001", quest)
+
+        # Update first objective
+        updated = manager.update_quest_progress(
+            player_id="player_001",
+            quest_id="quest_001",
+            objective_index=0,
+            amount=3
         )
-        
-        quest_manager.add_quest(quest_easy)
-        quest_manager.add_quest(quest_hard)
-        quest_manager.add_quest(quest_rep)
-        
-        # Filter available quests
-        available = quest_manager.get_available_quests(player)
-        
-        # Player is level 5 with low reputation
-        assert quest_easy in available
-        assert quest_hard not in available  # Level too low
-        assert quest_rep not in available   # Reputation too low
+
+        assert updated.objectives[0].current_count == 3
+
     
-    @pytest.mark.unit
-    def test_quest_manager_tracking_by_type(self):
-        """Test that quest manager can track quests by type"""
-        quest_manager = QuestManager()
-        
-        quest_types = ['fetch', 'kill', 'escort', 'explore']
-        
-        for quest_type in quest_types:
-            quest = Quest(
-                id=f'quest_{quest_type}',
-                name=f'{quest_type.title()} Quest',
-                type=quest_type,
-                difficulty='medium',
-                description=f'{quest_type.title()} quest',
-                giver='npc_test',
-                rewards={'experience': 100, 'gold': 50},
-                objectives=[{'description': f'{quest_type} objective', 'completed': False}],
-                location='test_location'
-            )
-            quest_manager.add_quest(quest)
-        
-        # Get quests by type
-        for quest_type in quest_types:
-            quests_of_type = quest_manager.get_quests_by_type(quest_type)
-            assert len(quests_of_type) == 1
-            assert quests_of_type[0].type == quest_type
+    def test_complete_quest_objective(self):
+        """Test completing a quest objective"""
+        manager = QuestManager()
+        quest = Mock(
+            quest_id="quest_001",
+            objectives=[Mock(description="Kill 5 goblins", completed=False)]
+        )
+
+        progress = manager.start_quest("player_001", quest)
+
+        # Complete objective
+        updated = manager.update_quest_progress(
+            player_id="player_001",
+            quest_id="quest_001",
+            objective_index=0,
+            amount=5
+        )
+
+        assert updated.objectives[0].completed is True
+        assert updated.objectives[0].current_count == 5
+
     
-    @pytest.mark.unit
-    def test_quest_manager_tracking_by_difficulty(self):
-        """Test that quest manager can track quests by difficulty"""
-        quest_manager = QuestManager()
-        
-        difficulties = ['easy', 'medium', 'hard']
-        
-        for difficulty in difficulties:
-            quest = Quest(
-                id=f'quest_{difficulty}',
-                name=f'{difficulty.title()} Quest',
-                type='fetch',
-                difficulty=difficulty,
-                description=f'{difficulty.title()} quest',
-                giver='npc_test',
-                rewards={'experience': 100, 'gold': 50},
-                objectives=[{'description': f'{difficulty} objective', 'completed': False}],
-                location='test_location'
-            )
-            quest_manager.add_quest(quest)
-        
-        # Get quests by difficulty
-        for difficulty in difficulties:
-            quests_of_difficulty = quest_manager.get_quests_by_difficulty(difficulty)
-            assert len(quests_of_difficulty) == 1
-            assert quests_of_difficulty[0].difficulty == difficulty
+    def test_complete_quest(self):
+        """Test completing a quest"""
+        manager = QuestManager()
+        quest = Mock(
+            quest_id="quest_001",
+            objectives=[
+                Mock(description="Kill 5 goblins", completed=False),
+                Mock(description="Find treasure", completed=False)
+            ]
+        )
+
+        progress = manager.start_quest("player_001", quest)
+
+        # Complete all objectives
+        progress.objectives[0].completed = True
+        progress.objectives[1].completed = True
+
+        completed = manager.complete_quest("player_001", "quest_001")
+
+        assert completed.status == "completed"
+        assert completed.completion_date is not None
+
     
-    @pytest.mark.unit
-    @given(st.integers(min_value=1, max_value=100))
-    def test_quest_manager_quest_count_limits(self, quest_count):
-        """Test that quest manager handles various numbers of quests"""
-        quest_manager = QuestManager()
-        
-        for i in range(quest_count):
-            quest = Quest(
-                id=f'quest_{i}',
-                name=f'Quest {i}',
-                type='fetch',
-                difficulty='medium',
-                description=f'Quest {i}',
-                giver='npc_test',
-                rewards={'experience': 100, 'gold': 50},
-                objectives=[{'description': f'Objective {i}', 'completed': False}],
-                location='test_location'
-            )
-            quest_manager.add_quest(quest)
-        
-        # Should handle all quests without issues
-        assert len(quest_manager.available_quests) == quest_count
-        
-        # Should be able to filter and retrieve quests
-        filtered = quest_manager.get_available_quests(create_test_player("Warrior", 10))
-        assert len(filtered) <= quest_count
+    def test_fail_quest(self):
+        """Test failing a quest"""
+        manager = QuestManager()
+        quest = Mock(quest_id="quest_001")
+
+        progress = manager.start_quest("player_001", quest)
+
+        failed = manager.fail_quest("player_001", "quest_001")
+
+        assert failed.status == "failed"
+
+    
+    def test_abandon_quest(self):
+        """Test abandoning a quest"""
+        manager = QuestManager()
+        quest = Mock(quest_id="quest_001")
+
+        progress = manager.start_quest("player_001", quest)
+
+        abandoned = manager.abandon_quest("player_001", "quest_001")
+
+        assert abandoned.status == "abandoned"
+
+    
+    def test_get_quest_progress(self):
+        """Test retrieving quest progress"""
+        manager = QuestManager()
+        quest = Mock(quest_id="quest_001")
+
+        progress = manager.start_quest("player_001", quest)
+
+        retrieved = manager.get_quest_progress("player_001", "quest_001")
+
+        assert retrieved.quest_id == "quest_001"
+        assert retrieved.player_id == "player_001"
+
+    
+    def test_get_active_quests(self):
+        """Test retrieving active quests for player"""
+        manager = QuestManager()
+        quests = [
+            Mock(quest_id="quest_001"),
+            Mock(quest_id="quest_002"),
+            Mock(quest_id="quest_003")
+        ]
+
+        for quest in quests:
+            manager.start_quest("player_001", quest)
+
+        active = manager.get_active_quests("player_001")
+
+        assert len(active) == 3
+        for progress in active:
+            assert progress.status == "active"
+
+    
+    def test_get_completed_quests(self):
+        """Test retrieving completed quests for player"""
+        manager = QuestManager()
+        quests = [Mock(quest_id="quest_001"), Mock(quest_id="quest_002")]
+
+        for quest in quests:
+            progress = manager.start_quest("player_001", quest)
+            progress.status = "completed"
+            manager.quest_progress[f"player_001_{quest.quest_id}"] = progress
+
+        completed = manager.get_completed_quests("player_001")
+
+        assert len(completed) == 2
+        for progress in completed:
+            assert progress.status == "completed"
+
+    
+    def test_is_quest_available(self):
+        """Test checking if quest is available"""
+        manager = QuestManager()
+        quest = Mock(
+            quest_id="quest_001",
+            requirements={"level": 5, "reputation": 10}
+        )
+
+        # Test with eligible player
+        player_data = {"level": 6, "reputation": {"current": 15}}
+        available = manager.is_quest_available(quest, player_data)
+
+        assert available is True
+
+        # Test with ineligible player
+        player_data = {"level": 3, "reputation": {"current": 5}}
+        available = manager.is_quest_available(quest, player_data)
+
+        assert available is False
+
+    
+    def test_update_progress_invalid_quest(self):
+        """Test updating progress for non-existent quest"""
+        manager = QuestManager()
+
+        with pytest.raises(KeyError):
+            manager.update_quest_progress("player_001", "nonexistent_quest", 0, 5)
+
+    
+    def test_update_progress_invalid_objective(self):
+        """Test updating progress with invalid objective index"""
+        manager = QuestManager()
+        quest = Mock(
+            quest_id="quest_001",
+            objectives=[Mock(description="Kill something", completed=False)]
+        )
+
+        progress = manager.start_quest("player_001", quest)
+
+        with pytest.raises(IndexError):
+            manager.update_quest_progress("player_001", "quest_001", 99, 5)
 
 
-class TestQuestRewards:
-    """Test quest reward system"""
+class TestQuestSystem:
+    """Test integrated QuestSystem class"""
+
     
-    @pytest.mark.unit
-    def test_quest_reward_distribution(self):
-        """Test that quest rewards are distributed correctly"""
-        player = create_test_player("Warrior", 5)
-        
-        # Track initial values
-        initial_exp = player.experience
-        initial_gold = player.gold
-        initial_items = len(player.inventory)
-        
-        rewards = {
-            'experience': 500,
-            'gold': 200,
-            'items': ['sword', 'shield', 'potion'],
-            'special_reward': 'title_hero'
-        }
-        
-        QuestManager.distribute_rewards(player, rewards)
-        
-        # Check rewards were applied
-        assert player.experience == initial_exp + rewards['experience']
-        assert player.gold == initial_gold + rewards['gold']
-        assert len(player.inventory) == initial_items + len(rewards['items'])
-        assert 'title_hero' in player.titles
+    def test_quest_system_initialization(self):
+        """Test QuestSystem initialization"""
+        system = QuestSystem()
+
+        assert hasattr(system, 'quest_generator')
+        assert hasattr(system, 'npc_manager')
+        assert hasattr(system, 'dialogue_manager')
+        assert hasattr(system, 'quest_manager')
+
     
-    @pytest.mark.unit
-    @given(st.integers(min_value=0, max_value=10000))
-    def test_quest_experience_rewards(self, experience):
-        """Test experience rewards with various values"""
-        player = create_test_player("Warrior", 5)
-        player.experience = 0
-        
-        rewards = {
-            'experience': experience,
-            'gold': 100,
-            'items': []
-        }
-        
-        QuestManager.distribute_rewards(player, rewards)
-        
-        assert player.experience == experience
+    def test_initialize_world(self):
+        """Test world initialization with quests and NPCs"""
+        system = QuestSystem()
+        locations = ["Town", "Forest", "Mountains", "Cave"]
+
+        world_data = system.initialize_world(locations=locations, npc_count=20)
+
+        assert 'npcs' in world_data
+        assert 'available_quests' in world_data
+        assert len(world_data['npcs']) == 20
+        assert len(world_data['available_quests']) > 0
+
     
-    @pytest.mark.unit
-    @given(st.integers(min_value=0, max_value=10000))
-    def test_quest_gold_rewards(self, gold):
-        """Test gold rewards with various values"""
-        player = create_test_player("Warrior", 5)
-        player.gold = 0
-        
-        rewards = {
-            'experience': 100,
-            'gold': gold,
-            'items': []
-        }
-        
-        QuestManager.distribute_rewards(player, rewards)
-        
-        assert player.gold == gold
+    def test_get_available_quests_for_location(self):
+        """Test getting available quests for specific location"""
+        system = QuestSystem()
+        system.initialize_world(locations=["Test Town"])
+
+        quests = system.get_available_quests_for_location("Test Town")
+
+        assert len(quests) >= 0
+        for quest in quests:
+            assert quest.location == "Test Town"
+
     
-    @pytest.mark.unit
-    @given(st.lists(st.text(min_size=1, max_size=20), min_size=0, max_size=10))
-    def test_quest_item_rewards(self, items):
-        """Test item rewards with various quantities"""
-        player = create_test_player("Warrior", 5)
-        player.inventory = []
-        
-        rewards = {
-            'experience': 100,
-            'gold': 50,
-            'items': items.copy()
-        }
-        
-        QuestManager.distribute_rewards(player, rewards)
-        
-        assert len(player.inventory) == len(items)
-        for item in items:
-            assert item in player.inventory
+    def test_get_npcs_in_location(self):
+        """Test getting NPCs in specific location"""
+        system = QuestSystem()
+        system.initialize_world(locations=["Test Town"], npc_count=5)
+
+        npcs = system.get_npcs_in_location("Test Town")
+
+        assert len(npcs) >= 1
+        for npc in npcs:
+            assert npc.location == "Test Town"
+
     
-    @pytest.mark.unit
-    def test_quest_special_rewards(self):
-        """Test special reward types"""
-        player = create_test_player("Warrior", 5)
-        player.titles = []
-        player.abilities = ['Attack', 'Defend']
-        
-        rewards = {
-            'experience': 100,
-            'gold': 50,
-            'items': [],
-            'special_reward': 'title_dragon_slayer'
-        }
-        
-        QuestManager.distribute_rewards(player, rewards)
-        
-        assert 'title_dragon_slayer' in player.titles
-        
-        # Test ability reward
-        rewards['special_reward'] = 'ability_fire_blast'
-        player.abilities = ['Attack', 'Defend']
-        
-        QuestManager.distribute_rewards(player, rewards)
-        
-        assert 'fire_blast' in [ability.lower() for ability in player.abilities]
+    def test_start_quest_from_npc(self):
+        """Test starting quest from NPC"""
+        system = QuestSystem()
+        system.initialize_world(locations=["Test Town"], npc_count=1)
+
+        npcs = system.get_npcs_in_location("Test Town")
+        npc = npcs[0]
+
+        available_quests = system.get_available_quests_for_location("Test Town")
+        if available_quests:
+            quest = available_quests[0]
+
+            progress = system.start_quest_from_npc(
+                player_id="player_001",
+                quest_id=quest.quest_id,
+                npc_id=npc.npc_id
+            )
+
+            assert progress.quest_id == quest.quest_id
+            assert progress.player_id == "player_001"
+            assert progress.status == "active"
