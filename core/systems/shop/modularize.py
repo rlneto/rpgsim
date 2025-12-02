@@ -1,19 +1,14 @@
+"""
+Shop modularization utility
+"""
 
-import sys
-sys.path.insert(0, str(Path('.')))
+# Shop system modularization placeholder
+# This file is reserved for future modularization work
 
-from pathlib import Path
+SYSTEM_NAME = "shop"
 
-# Implementar modularização para shop
-# Baseado no padrão Character/World System
 
-print(f"Modularizando {system_name}...")
-
-# TODO: Implementar lógica específica de modularização
-# 1. Extrair entidades de domínio
-# 2. Criar serviços de negócio
-# 3. Implementar repositórios
-# 4. Criar fachada unificada
-# 5. Migrar testes
-
-print("Modularização concluída!")
+def modularize_shop_system():
+    """Placeholder for shop system modularization"""
+    # TODO: Implement shop system modularization
+    pass

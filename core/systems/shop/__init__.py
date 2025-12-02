@@ -16,6 +16,25 @@ from .domain.shop import (
     ShopQuality,
     DEFAULT_SHOP_CONFIGS,
 )
+from .services.shop_service import (
+    ShopCreationService,
+    ShopTransactionService,
+    ShopInventoryService,
+    ShopEconomyService,
+    ShopManagementService,
+)
+from .services.item_service import ItemGenerationService, ItemPricingService
+from .repositories.memory_repository import (
+    MemoryShopRepository,
+    MemoryShopItemRepository,
+    MemoryShopTransactionRepository,
+)
+from .interfaces.repositories import (
+    ShopRepository,
+    ShopItemRepository,
+    ShopTransactionRepository,
+)
+from .facade import ShopSystem
 
 
 class Pricing:
@@ -62,82 +81,13 @@ class Transaction:
         )
         return Transaction(transaction_type, item.name, quantity, unit_price)
 
+    def get_total_value(self) -> int:
+        """Get total transaction value"""
+        return self.quantity * self.unit_price
 
-from .services.shop_service import (
-    ShopCreationService,
-    ShopTransactionService,
-    ShopInventoryService,
-    ShopEconomyService,
-    ShopManagementService,
-)
-
-from .services.item_service import ItemGenerationService, ItemPricingService
-
-from .repositories.memory_repository import (
-    MemoryShopRepository,
-    MemoryShopItemRepository,
-    MemoryShopTransactionRepository,
-)
-
-from .interfaces.repositories import (
-    ShopRepository,
-    ShopItemRepository,
-    ShopTransactionRepository,
-)
-
-# Import from the main shop module (refactored)
-try:
-    from ..shop import (
-        ShopSystem,
-        Shop,
-        ShopItem,
-        ShopTransaction,
-        ShopType,
-        ItemRarity,
-        ItemCondition,
-        ShopQuality,
-        ShopCreateParams,
-        ShopSystemCreateParams,
-        TransactionParams,
-    )
-except ImportError:
-    # Fallback to facade
-    from .facade import ShopSystem
 
 __all__ = [
-    # Main classes from refactored shop module
     "ShopSystem",
-    "Shop",
-    "ShopItem",
-    "ShopTransaction",
-    "ShopType",
-    "ItemRarity",
-    "ItemCondition",
-    "ShopQuality",
-    "ShopCreateParams",
-    "ShopSystemCreateParams",
-    "TransactionParams",
-    # Domain entities (legacy)
-    "ShopInventory",
-    "ShopEconomy",
-    "DEFAULT_SHOP_CONFIGS",
-    # Legacy classes for compatibility
     "Pricing",
     "Transaction",
-    # Services
-    "ShopCreationService",
-    "ShopTransactionService",
-    "ShopInventoryService",
-    "ShopEconomyService",
-    "ShopManagementService",
-    "ItemGenerationService",
-    "ItemPricingService",
-    # Repositories
-    "MemoryShopRepository",
-    "MemoryShopItemRepository",
-    "MemoryShopTransactionRepository",
-    # Interfaces
-    "ShopRepository",
-    "ShopItemRepository",
-    "ShopTransactionRepository",
 ]

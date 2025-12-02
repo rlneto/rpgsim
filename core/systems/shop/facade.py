@@ -3,6 +3,7 @@ Facade for shop system operations
 """
 
 from typing import List, Dict, Optional, Any
+from dataclasses import dataclass
 from .domain.shop import (
     Shop,
     ShopItem,
@@ -24,6 +25,65 @@ from .repositories.memory_repository import (
     MemoryShopItemRepository,
     MemoryShopTransactionRepository,
 )
+
+
+@dataclass
+class ShopConfig:
+    """Configuration for shop creation"""
+
+    shop_id: str
+    name: str
+    shop_type: str
+    owner: str
+    location: str
+    quality_level: Optional[str] = None
+    gold_reserve: Optional[int] = None
+    inventory_size: Optional[int] = None
+
+    def __post_init__(self):
+        if self.quality_level is None:
+            self.quality_level = ShopQuality.STANDARD.value
+
+
+@dataclass
+class TransactionConfig:
+    """Configuration for transaction processing"""
+
+    shop_id: str
+    transaction_type: str
+    item_id: Optional[str] = None
+    item: Optional[ShopItem] = None
+    character_gold: int = 0
+    character_reputation: int = 50
+
+
+@dataclass
+class ItemConfig:
+    """Configuration for item generation"""
+
+    name: str
+    item_type: str
+    base_value: int
+    rarity: Optional[str] = None
+    condition: Optional[str] = None
+    effect: str = "Standard effect"
+
+    def __post_init__(self):
+        if self.rarity is None:
+            self.rarity = ItemRarity.COMMON.value
+        if self.condition is None:
+            self.condition = ItemCondition.GOOD.value
+
+
+@dataclass
+class PriceConfig:
+    """Configuration for dynamic price calculation"""
+
+    shop_id: str
+    item_id: str
+    supply_factor: float = 1.0
+    demand_factor: float = 1.0
+    location_wealth: float = 1.0
 
 
 class ShopSystem:
@@ -49,28 +109,19 @@ class ShopSystem:
         self.pricing_service = ItemPricingService()
 
     # Shop Management Methods
-    def create_shop(
-        self,
-        shop_id: str,
-        name: str,
-        shop_type: str,
-        owner: str,
-        location: str,
-        quality_level: str = ShopQuality.STANDARD.value,
-        gold_reserve: Optional[int] = None,
-        inventory_size: Optional[int] = None,
-    ) -> Optional[Shop]:
+    def create_shop(self, config: ShopConfig) -> Optional[Shop]:
         """Create a new shop"""
-        shop = self.creation_service.create_shop(
-            shop_id,
-            name,
-            shop_type,
-            owner,
-            location,
-            quality_level,
-            gold_reserve,
-            inventory_size,
-        )
+        shop_params = {
+            "shop_id": config.shop_id,
+            "name": config.name,
+            "shop_type": config.shop_type,
+            "owner": config.owner,
+            "location": config.location,
+            "quality_level": config.quality_level,
+            "gold_reserve": config.gold_reserve,
+            "inventory_size": config.inventory_size,
+        }
+        shop = self.creation_service.create_shop(**shop_params)
 
         if shop:
             self.shop_repo.save_shop(shop)
@@ -98,37 +149,52 @@ class ShopSystem:
         return self.shop_repo.delete_shop(shop_id)
 
     # Transaction Methods
-    def process_transaction(
-        self,
-        shop_id: str,
-        transaction_type: str,
-        item_id: Optional[str] = None,
-        item: Optional[ShopItem] = None,
-        character_gold: int = 0,
-        character_reputation: int = 50,
-    ) -> Dict[str, Any]:
+    def process_transaction(self, config: TransactionConfig) -> Dict[str, Any]:
         """Process shop transaction (buy or sell)"""
-        shop = self.shop_repo.load_shop(shop_id)
+        result = {"success": False, "reason": "Unknown error"}
+        shop = self.shop_repo.load_shop(config.shop_id)
         if not shop:
             return {"success": False, "reason": "Shop not found"}
 
-        if transaction_type == "buy":
-            if not item_id:
+        if config.transaction_type == "buy":
+            if not config.item_id:
                 return {
                     "success": False,
                     "reason": "Item ID required for buy transaction",
+                    "required_gold": 0,
                 }
-            result = self.transaction_service.process_buy_transaction(
-                shop, item_id, character_gold, character_reputation
-            )
-        elif transaction_type == "sell":
+
+            # Get the actual item
+            if not config.item_id:
+                return {"success": False, "reason": "Item ID required"}
+            item = self.item_repo.load_item(config.shop_id, config.item_id)
             if not item:
+                return {"success": False, "reason": "Item not found"}
+
+            required_gold = self.pricing_service.calculate_buy_price(
+                shop, item, config.character_reputation
+            )
+
+            if config.character_gold < required_gold:
+                return {
+                    "success": False,
+                    "reason": "Insufficient gold",
+                    "required_gold": required_gold,
+                    "character_gold": config.character_gold,
+                }
+
+            # Process buy
+            result = self.transaction_service.process_buy_transaction(
+                shop, config.item_id, config.character_gold, config.character_reputation
+            )
+        elif config.transaction_type == "sell":
+            if not config.item:
                 return {
                     "success": False,
                     "reason": "Item required for sell transaction",
                 }
             result = self.transaction_service.process_sell_transaction(
-                shop, item, character_reputation
+                shop, config.item, config.character_reputation
             )
         else:
             return {"success": False, "reason": "Invalid transaction type"}
@@ -222,9 +288,12 @@ class ShopSystem:
         if not shop:
             return {"success": False, "reason": "Shop not found"}
 
-        result = self.economy_service.update_shop_economy(
-            shop, economic_change, location_wealth_change
-        )
+        economy_params = {
+            "shop": shop,
+            "economic_change": economic_change,
+            "location_wealth_change": location_wealth_change,
+        }
+        result = self.economy_service.update_shop_economy(**economy_params)
         self.shop_repo.save_shop(shop)
         return result
 
@@ -272,39 +341,34 @@ class ShopSystem:
 
         return self.management_service.get_shop_statistics(shop)
 
-    def generate_custom_item(
-        self,
-        name: str,
-        item_type: str,
-        base_value: int,
-        rarity: str = ItemRarity.COMMON.value,
-        condition: str = ItemCondition.GOOD.value,
-        effect: str = "Standard effect",
-    ) -> ShopItem:
+    def generate_custom_item(self, config: ItemConfig) -> ShopItem:
         """Generate custom shop item"""
-        return self.item_service.generate_custom_item(
-            name, item_type, base_value, rarity, condition, effect
-        )
+        item_params = {
+            "name": config.name,
+            "item_type": config.item_type,
+            "base_value": config.base_value,
+            "rarity": config.rarity,
+            "condition": config.condition,
+            "effect": config.effect,
+        }
+        return self.item_service.generate_custom_item(**item_params)
 
-    def calculate_dynamic_price(
-        self,
-        shop_id: str,
-        item_id: str,
-        supply_factor: float = 1.0,
-        demand_factor: float = 1.0,
-        location_wealth: float = 1.0,
-    ) -> Optional[int]:
+    def calculate_dynamic_price(self, config: PriceConfig) -> Optional[int]:
         """Calculate dynamic price based on market conditions"""
-        shop = self.shop_repo.load_shop(shop_id)
+        shop = self.shop_repo.load_shop(config.shop_id)
         if not shop:
             return None
 
-        item = self.item_repo.load_item(shop_id, item_id)
+        item = self.item_repo.load_item(config.shop_id, config.item_id)
         if not item:
             return None
 
         return self.pricing_service.calculate_dynamic_price(
-            shop, item, supply_factor, demand_factor, location_wealth
+            shop,
+            item,
+            config.supply_factor,
+            config.demand_factor,
+            config.location_wealth,
         )
 
     def calculate_bulk_purchase_price(
@@ -350,31 +414,42 @@ def create_shop(
     quality_level: str = ShopQuality.STANDARD.value,
 ) -> Optional[Shop]:
     """Create shop (backward compatibility)"""
-    return _shop_system.create_shop(
-        shop_id, name, shop_type, owner, location, quality_level
+    config = ShopConfig(
+        shop_id=shop_id,
+        name=name,
+        shop_type=shop_type,
+        owner=owner,
+        location=location,
+        quality_level=quality_level,
     )
+    return _shop_system.create_shop(config)
 
 
 def buy_item_from_shop(
     shop_id: str, item_id: str, character_gold: int, character_reputation: int = 50
 ) -> Dict[str, Any]:
     """Buy item from shop (backward compatibility)"""
-    return _shop_system.process_transaction(
-        shop_id,
-        "buy",
+    config = TransactionConfig(
+        shop_id=shop_id,
+        transaction_type="buy",
         item_id=item_id,
         character_gold=character_gold,
         character_reputation=character_reputation,
     )
+    return _shop_system.process_transaction(config)
 
 
 def sell_item_to_shop(
     shop_id: str, item: ShopItem, character_reputation: int = 50
 ) -> Dict[str, Any]:
     """Sell item to shop (backward compatibility)"""
-    return _shop_system.process_transaction(
-        shop_id, "sell", item=item, character_reputation=character_reputation
+    config = TransactionConfig(
+        shop_id=shop_id,
+        transaction_type="sell",
+        item=item,
+        character_reputation=character_reputation,
     )
+    return _shop_system.process_transaction(config)
 
 
 def get_shop_inventory(shop_id: str) -> List[ShopItem]:

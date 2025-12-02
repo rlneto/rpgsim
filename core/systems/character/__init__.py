@@ -17,9 +17,6 @@ Architecture:
 """
 
 from .domain.character import Character, CharacterClass, CharacterStats
-from .facade import CharacterSystem
-
-# Legacy compatibility exports
 from .facade import (
     CharacterSystem,
     create_character,
@@ -27,6 +24,9 @@ from .facade import (
     add_experience,
     get_all_character_classes,
     get_class_balance_stats,
+    validate_class_balance,
+    verify_unique_mechanics,
+    verify_minimum_abilities,
 )
 
 __all__ = [
@@ -37,7 +37,6 @@ __all__ = [
     "add_experience",
     "get_all_character_classes",
     "get_class_balance_stats",
-    # BDD compatibility
     "validate_class_balance",
     "verify_unique_mechanics",
     "verify_minimum_abilities",

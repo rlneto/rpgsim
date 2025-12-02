@@ -20,7 +20,7 @@ class InventorySystem:
         try:
             inventory = self.service.create_inventory(character_id, max_slots)
             return self.repository.save(character_id, inventory)
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             return False
 
     def add_item(self, character_id: str, item: Item, quantity: int = 1) -> bool:

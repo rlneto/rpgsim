@@ -3,8 +3,13 @@ Character Module for RPGSim
 Provides character creation and management functionality
 """
 
-from .domain.character import Character, CharacterClass, CharacterStats
-from .facade import CharacterSystem
+# Re-export from systems.character for backward compatibility
+from ..systems.character import (
+    Character,
+    CharacterClass,
+    CharacterStats,
+    CharacterSystem,
+)
 
 __all__ = [
     "Character",

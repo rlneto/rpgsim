@@ -3,6 +3,7 @@ Facade for combat system operations
 """
 
 from typing import List, Dict, Optional, Any, Tuple
+from dataclasses import dataclass
 from .domain.combat import (
     Combat,
     Combatant,
@@ -18,6 +19,49 @@ from .services.combat_service import (
     CombatStatusService,
 )
 from .repositories.memory_repository import MemoryCombatSystemRepository
+
+
+@dataclass
+class CombatantConfig:
+    """Configuration for combatant creation"""
+
+    combatant_id: str
+    name: str
+    team: str
+    stats: CombatStats
+    controller: str = "player"
+    position: Tuple[int, int] = (0, 0)
+    abilities: Optional[List[str]] = None
+    ai_type: str = "balanced"
+
+
+@dataclass
+class AttackConfig:
+    """Configuration for attack creation"""
+
+    attack_id: str
+    name: str
+    attack_type: str
+    damage_type: str
+    base_damage: int
+    accuracy_bonus: int = 0
+    critical_bonus: float = 0.0
+    mana_cost: int = 0
+    attack_range: int = 1
+    area_of_effect: int = 0
+    description: str = ""
+
+
+@dataclass
+class ActionConfig:
+    """Configuration for combat action creation"""
+
+    action_id: str
+    combatant_id: str
+    action_type: str
+    target_id: Optional[str] = None
+    attack_id: Optional[str] = None
+    position: Optional[Tuple[int, int]] = None
 
 
 class CombatSystem:
@@ -90,21 +134,19 @@ class CombatSystem:
         return self.repo.get_combat_repository().get_combats_by_location(location)
 
     # Combatant Management Methods
-    def create_combatant(
-        self,
-        combatant_id: str,
-        name: str,
-        team: str,
-        stats: CombatStats,
-        controller: str = "player",
-        position: Tuple[int, int] = (0, 0),
-        abilities: Optional[List[str]] = None,
-        ai_type: str = "balanced",
-    ) -> Optional[Combatant]:
+    def create_combatant(self, config: CombatantConfig) -> Optional[Combatant]:
         """Create a new combatant"""
-        return self.creation_service.create_combatant(
-            combatant_id, name, team, stats, controller, position, abilities, ai_type
-        )
+        combatant_data = {
+            "combatant_id": config.combatant_id,
+            "name": config.name,
+            "team": config.team,
+            "stats": config.stats,
+            "controller": config.controller,
+            "position": config.position,
+            "abilities": config.abilities or [],
+            "ai_type": config.ai_type,
+        }
+        return self.creation_service.create_combatant(**combatant_data)
 
     def add_combatant(self, combat_id: str, combatant: Combatant) -> bool:
         """Add combatant to combat"""
@@ -131,42 +173,26 @@ class CombatSystem:
         )
 
     # Attack Management Methods
-    def create_attack(
-        self,
-        attack_id: str,
-        name: str,
-        attack_type: str,
-        damage_type: str,
-        base_damage: int,
-        accuracy_bonus: int = 0,
-        critical_bonus: float = 0.0,
-        mana_cost: int = 0,
-        attack_range: int = 1,
-        area_of_effect: int = 0,
-        status_effects: Optional[List[str]] = None,
-        description: str = "",
-    ) -> Optional[Attack]:
+    def create_attack(self, config: AttackConfig) -> Optional[Attack]:
         """Create a new attack"""
-        try:
-            attack = Attack(
-                id=attack_id,
-                name=name,
-                attack_type=attack_type,
-                damage_type=damage_type,
-                base_damage=base_damage,
-                accuracy_bonus=accuracy_bonus,
-                critical_bonus=critical_bonus,
-                mana_cost=mana_cost,
-                range=attack_range,
-                area_of_effect=area_of_effect,
-                status_effects=status_effects or [],
-                description=description,
-            )
+        attack_data = {
+            "id": config.attack_id,
+            "name": config.name,
+            "attack_type": config.attack_type,
+            "damage_type": config.damage_type,
+            "base_damage": config.base_damage,
+            "accuracy_bonus": config.accuracy_bonus,
+            "critical_bonus": config.critical_bonus,
+            "mana_cost": config.mana_cost,
+            "range": config.attack_range,
+            "area_of_effect": config.area_of_effect,
+            "status_effects": [],
+            "description": config.description,
+        }
 
-            self.repo.get_attack_repository().save_attack(attack)
-            return attack
-        except Exception:
-            return None
+        attack = Attack(**attack_data)
+        self.repo.get_attack_repository().save_attack(attack)
+        return attack
 
     def get_attack(self, attack_id: str) -> Optional[Attack]:
         """Get attack by ID"""
@@ -189,24 +215,17 @@ class CombatSystem:
         """Execute a combat action"""
         return self.execution_service.execute_action(combat_id, action)
 
-    def create_action(
-        self,
-        action_id: str,
-        combatant_id: str,
-        action_type: str,
-        target_id: Optional[str] = None,
-        attack_id: Optional[str] = None,
-        position: Optional[Tuple[int, int]] = None,
-    ) -> CombatAction:
+    def create_action(self, config: ActionConfig) -> CombatAction:
         """Create a combat action"""
-        return CombatAction(
-            id=action_id,
-            combatant_id=combatant_id,
-            action_type=action_type,
-            target_id=target_id,
-            attack_id=attack_id,
-            position=position,
-        )
+        action_data = {
+            "id": config.action_id,
+            "combatant_id": config.combatant_id,
+            "action_type": config.action_type,
+            "target_id": config.target_id,
+            "attack_id": config.attack_id,
+            "position": config.position,
+        }
+        return CombatAction(**action_data)
 
     def get_actions(self, combat_id: str, limit: int = 100) -> List[CombatAction]:
         """Get combat actions"""
@@ -327,7 +346,7 @@ class CombatSystem:
 
         # Check if combat has teams
         teams = set(c.team for c in combat.combatants)
-        if len(teams) < 2:
+        if not teams or len(teams) < 2:
             issues.append("Combat needs at least 2 teams")
 
         # Check if turn order is valid
@@ -338,7 +357,7 @@ class CombatSystem:
                         f"Turn order contains non-existent combatant: {combatant_id}"
                     )
 
-        return {"valid": len(issues) == 0, "issues": issues}
+        return {"valid": not issues, "issues": issues}
 
     def cleanup_completed_combats(self) -> int:
         """Remove completed combats and return count"""

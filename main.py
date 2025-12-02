@@ -1,229 +1,152 @@
 #!/usr/bin/env python3
 """
-RPGSim - Text-based RPG Simulation
-Main entry point for the game
+RPGSim - Interactive Graphical RPG Simulation
+EXCLUSIVE GRAPHICAL INTERFACE LAUNCHER - MANDATORY: No CLI Alternative
+
+🔥 MAXIMUM PRIORITY: ALL gameplay through graphical interface ONLY
+🔥 MANDATORY: Game must be completely unplayable without GUI
+🔥 FORBIDDEN: Any command-line interactions for gameplay
+🔥 REQUIRED: All user input and output through graphical UI
 
 Usage:
-    python main.py [command] [options]
+    python main.py    # Launch RPGSim with exclusive graphical interface
 
-Commands:
-    start          - Start a new game
-    test           - Run all quality checks
-    dev            - Development mode with test features
-    help           - Show this help message
+NO parameters - ALL interactions through GUI only
 """
 
 import sys
-import argparse
+import asyncio
 from pathlib import Path
+from typing import Dict, Any
 
 # Add project root to path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 
-class RPGSimCLI:
-    """Command Line Interface for RPGSim"""
-
+class RPGSimGraphicalLauncher:
+    """EXCLUSIVE Graphical Interface Launcher - GUI ONLY"""
+    
     def __init__(self):
-        self.parser = argparse.ArgumentParser(
-            description="RPGSim - Text-based RPG Simulation",
-            formatter_class=argparse.RawDescriptionHelpFormatter,
-            epilog="""
-Examples:
-  python main.py start           # Start a new game
-  python main.py test            # Run quality checks
-  python main.py dev --character # Test character creation
-  python main.py help            # Show this help message
-            """,
-        )
-
-        self._setup_commands()
-
-    def _setup_commands(self):
-        """Setup command line arguments"""
-        subparsers = self.parser.add_subparsers(
-            dest="command", help="Available commands"
-        )
-
-        # Start command
-        start_parser = subparsers.add_parser("start", help="Start a new game")
-        start_parser.add_argument("--name", type=str, help="Character name")
-        start_parser.add_argument(
-            "--class", type=str, dest="class_name", help="Character class"
-        )
-
-        # Test command
-        test_parser = subparsers.add_parser("test", help="Run quality checks")
-        test_parser.add_argument("--system", type=str, help="Test specific system only")
-        test_parser.add_argument(
-            "--verbose", "-v", action="store_true", help="Verbose output"
-        )
-
-        # Development command
-        dev_parser = subparsers.add_parser("dev", help="Development mode")
-        dev_parser.add_argument(
-            "--character", action="store_true", help="Test character creation"
-        )
-        dev_parser.add_argument(
-            "--world", action="store_true", help="Test world system"
-        )
-        dev_parser.add_argument(
-            "--combat", action="store_true", help="Test combat system"
-        )
-
-        # Help command
-        subparsers.add_parser("help", help="Show this help message")
-
-    def run(self, args=None):
-        """Run the CLI with given arguments"""
-        if args is None:
-            args = sys.argv[1:]
-
-        parsed_args = self.parser.parse_args(args)
-
-        if not parsed_args.command or parsed_args.command == "help":
-            self.parser.print_help()
-            return
-
-        # Route to appropriate handler
-        command_handlers = {
-            "start": self._handle_start,
-            "test": self._handle_test,
-            "dev": self._handle_dev,
+        self.graphical_interface_only = True  # MANDATORY REQUIREMENT
+        self.game_state = None
+        self.ui_system = None
+        self.game_engine = None
+        
+    def launch_graphical_interface(self):
+        """Launch RPGSim EXCLUSIVELY through graphical interface"""
+        print("🏰 RPGSim - Graphical Interface Only 🏰")
+        print("=" * 60)
+        print("🔥 MAXIMUM PRIORITY: Exclusive GUI Mode Activated")
+        print("📋 MANDATORY: All interactions through graphical interface")
+        print("=" * 60)
+        
+        try:
+            # Import ONLY graphical interface systems
+            from game.ui.screens.modern_terminal_ui import (
+                create_terminal_ui, 
+                run_terminal_ui,
+                RPGSimApp
+            )
+            from core.engine import get_game_engine
+            
+            # Initialize game engine
+            self.game_engine = get_game_engine()
+            
+            # Create graphical interface application
+            app = create_terminal_ui()
+            
+            # Initialize with game state
+            initial_state = self._create_initial_game_state()
+            app.initialize_game_state(initial_state)
+            
+            print("✅ Graphical Interface Initialized Successfully!")
+            print("🎮 Starting RPGSim in Interactive GUI Mode...")
+            print("🔥 IMPORTANT: No text-based interactions available!")
+            print("📋 GUI Features: Character creation, world map, combat, inventory")
+            print("=" * 60)
+            print("🚀 Launching graphical interface application...")
+            print("")
+            
+            # Run EXCLUSIVE graphical interface
+            asyncio.run(run_terminal_ui(app))
+            
+        except ImportError as e:
+            print(f"❌ FAILED TO IMPORT GRAPHICAL INTERFACE: {e}")
+            print("🔧 MANDATORY DEPENDENCIES FOR GUI MODE:")
+            print("   pip install textual rich")
+            print("🚨 CRITICAL: RPGSim cannot start without graphical interface")
+            sys.exit(1)
+            
+        except Exception as e:
+            print(f"❌ FAILED TO LAUNCH GRAPHICAL INTERFACE: {e}")
+            print("🔧 ERROR: RPGSim requires graphical interface to function")
+            print("🚨 CRITICAL: Text-based fallback is FORBIDDEN by requirements")
+            sys.exit(1)
+    
+    def _create_initial_game_state(self) -> Dict[str, Any]:
+        """Create initial game state for graphical interface"""
+        return {
+            'game_mode': 'main_menu',
+            'player': None,
+            'location': None,
+            'inventory': [],
+            'quests': [],
+            'combat': None,
+            'ui_theme': 'medieval',
+            'graphics_enabled': True,  # MANDATORY: Always true
+            'text_mode_disabled': True,  # MANDATORY: Always true
+            'interface_type': 'graphical_only',  # MANDATORY
+            'available_classes': [
+                'Warrior', 'Mage', 'Rogue', 'Ranger', 'Paladin',
+                'Cleric', 'Druid', 'Necromancer', 'Bard', 'Barbarian',
+                'Monk', 'Fighter', 'Wizard', 'Sorcerer', 'Warlock',
+                'Priest', 'Shaman', 'Assassin', 'Hunter', 'Death Knight'
+            ],
+            'settings': {
+                'ui_animations': True,  # MANDATORY
+                'sound_effects': True,
+                'auto_save': True,
+                'difficulty': 'Normal'
+            }
         }
-
-        handler = command_handlers.get(parsed_args.command)
-        if handler:
-            handler(parsed_args)
-        else:
-            print(f"Unknown command: {parsed_args.command}")
-            self.parser.print_help()
-
-    def _handle_start(self, args):
-        """Handle game start command"""
-        print("Welcome to RPGSim!")
-        print("=" * 50)
-
-        try:
-            # Import game engine
-            from core.engine import get_game_engine
-
-            # Start new game
-            if args.name and args.class_name:
-                engine = get_game_engine()
-                success = engine.start_new_game(args.name, args.class_name)
-
-                if success:
-                    status = engine.get_game_status()
-                    player = status["game_state"]["player"]
-                    print(f"Created {args.name} the {args.class_name}")
-                    print(f"   Level: {player['level']}")
-                    print(f"   HP: {player['hp']}")
-                    print(f"   Gold: {player['gold']}")
-                    print(f"   Abilities: {player['abilities_count']}")
-                    print("Game would start here...")
-                else:
-                    print(
-                        f"Failed to create character: {args.name} ({args.class_name})"
-                    )
-            else:
-                print("Please provide --name and --class to start game")
-                print("Example: python main.py start --name Aragorn --class Warrior")
-
-        except ImportError as e:
-            print(f"Import error: {e}")
-        except Exception as e:
-            print(f"Error starting game: {e}")
-
-    def _handle_test(self, args):
-        """Handle testing command"""
-        print("Running RPGSim Quality Checks")
-        print("=" * 50)
-
-        try:
-            from tests.quality_checker import run_quality_checks
-
-            if args.system:
-                success = run_quality_checks(
-                    system_only=args.system, verbose=args.verbose
-                )
-            else:
-                success = run_quality_checks(verbose=args.verbose)
-
-            if success:
-                print("All quality checks passed!")
-                sys.exit(0)
-            else:
-                print("Some quality checks failed!")
-                sys.exit(1)
-
-        except ImportError:
-            print("Quality checker not yet implemented")
-            sys.exit(1)
-        except Exception as e:
-            print(f"Error running tests: {e}")
-            sys.exit(1)
-
-    def _handle_dev(self, args):
-        """Handle development mode command"""
-        print("RPGSim Development Mode")
-        print("=" * 50)
-
-        try:
-            if args.character:
-                self._test_character_creation()
-            elif args.world:
-                print("World system testing not yet implemented")
-            elif args.combat:
-                print("Combat system testing not yet implemented")
-            else:
-                print("Available development tests:")
-                print("  --character   Test character creation")
-                print("  --world        Test world system (coming soon)")
-                print("  --combat       Test combat system (coming soon)")
-                print("\nUse: python main.py dev --[feature]")
-
-        except Exception as e:
-            print(f"Error in development mode: {e}")
-
-    def _test_character_creation(self):
-        """Test character creation interactively"""
-        print("Testing Character Creation System")
-        print("-" * 40)
-
-        try:
-            from core.engine import get_game_engine
-
-            # Test basic character creation
-            engine = get_game_engine()
-            success = engine.start_new_game("TestCharacter", "Warrior")
-
-            if success:
-                status = engine.get_game_status()
-                player = status["game_state"]["player"]
-                print("Character created successfully")
-                print(f"   Name: {player['name']}")
-                print(f"   Class: {player['class']}")
-                print(f"   Level: {player['level']}")
-                print(f"   HP: {player['hp']}")
-                print(f"   Gold: {player['gold']}")
-                print(f"   Abilities: {player['abilities_count']}")
-                print(f"   Inventory: {player['inventory_size']} items")
-            else:
-                print("Failed to create test character")
-
-        except ImportError as e:
-            print("Character system not yet implemented")
-            print(f"Import error: {e}")
-        except Exception as e:
-            print(f"Character creation test error: {e}")
+    
+    def show_gui_requirements(self):
+        """Display mandatory GUI requirements"""
+        print("📋 MANDATORY GUI REQUIREMENTS:")
+        print("✅ All user input through graphical UI elements")
+        print("✅ All game output through graphical rendering")
+        print("✅ Real-time graphical updates")
+        print("✅ Interactive animations and effects")
+        print("✅ Continuous graphical interface")
+        print("❌ NO command-line interface for gameplay")
+        print("❌ NO text-based fallback allowed")
+        print("❌ NO direct API access for users")
+        print("")
+        print("🎮 GUI FEATURES TO IMPLEMENT:")
+        print("• Character creation screen with visual class selector")
+        print("• Interactive world map with click-to-travel")
+        print("• Turn-based combat with graphical animations")
+        print("• Drag-and-drop inventory management")
+        print("• Visual shop interface with item browsing")
+        print("• Quest log with graphical status indicators")
+        print("• Real-time health and status bars")
+        print("• Rich ASCII art and animations")
+        print("• Sound effects and background music")
+        print("")
+        print("🔥 PRIORITY: Graphical interface is MANDATORY")
+        print("📋 REQUIREMENT: Game must be unplayable without GUI")
 
 
 def main():
-    """Main entry point"""
-    cli = RPGSimCLI()
-    cli.run()
+    """Main entry point - EXCLUSIVE GRAPHICAL INTERFACE"""
+    launcher = RPGSimGraphicalLauncher()
+    
+    # Display requirements first
+    launcher.show_gui_requirements()
+    
+    # Launch exclusive graphical interface
+    launcher.launch_graphical_interface()
 
 
 if __name__ == "__main__":

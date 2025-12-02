@@ -1,0 +1,28 @@
+# LLM Agent-Optimized Requirements for RPGSim
+# Prioritized for agent productivity, not human user experience
+
+# Core Data Validation - Explicit, deterministic contracts
+pydantic>=2.0.0              # Explicit data models and validation
+
+# Testing - Simple, explicit testing, no framework magic
+pytest>=7.0.0                 # Simple assert-based testing
+pytest-cov>=4.0.0            # Coverage reporting (optional for agents)
+hypothesis>=6.0.0             # Property-based testing for edge cases
+
+# Code Quality - Explicit rules, clear agent feedback
+black>=23.0.0                  # Simple code formatting
+isort>=5.12.0                  # Import sorting
+mypy>=1.0.0                    # Type checking (optional for agents)
+
+# Development Tools - Simple, explicit, agent-friendly
+pre-commit>=3.0.0               # Pre-commit hooks (optional)
+colorama>=0.4.4                # Cross-platform colored terminal output
+
+# Mathematical Operations - Explicit calculations (if needed)
+numpy>=1.21.0                  # Numerical operations
+
+# JSON/YAML Processing - Simple data handling (if needed)
+PyYAML>=6.0.0                  # YAML parsing
+
+# Static Code Analysis - Explicit code quality
+pylint>=2.15.0                 # Static analysis for 10/10 quality

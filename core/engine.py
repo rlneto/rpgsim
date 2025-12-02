@@ -138,20 +138,34 @@ class GameEngine:
 
 
 # Singleton instance for global access
-_game_engine: Optional[GameEngine] = None
+class GameEngineManager:
+    """Manager for game engine instance without global statements"""
+
+    def __init__(self):
+        self._engine: Optional[GameEngine] = None
+
+    def get_engine(self) -> GameEngine:
+        """Get game engine instance"""
+        if self._engine is None:
+            self._engine = GameEngine()
+        return self._engine
+
+    def reset_engine(self) -> None:
+        """Reset game engine instance"""
+        if self._engine:
+            self._engine.shutdown()
+        self._engine = None
+
+
+# Global instance for backward compatibility
+_engine_manager = GameEngineManager()
 
 
 def get_game_engine() -> GameEngine:
     """Get global game engine instance"""
-    global _game_engine
-    if _game_engine is None:
-        _game_engine = GameEngine()
-    return _game_engine
+    return _engine_manager.get_engine()
 
 
 def reset_game_engine():
     """Reset global game engine instance"""
-    global _game_engine
-    if _game_engine:
-        _game_engine.shutdown()
-    _game_engine = None
+    _engine_manager.reset_engine()

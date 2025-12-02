@@ -51,6 +51,11 @@ class ItemRarity:
         """Get all rarity levels"""
         return [cls.COMMON, cls.UNCOMMON, cls.RARE, cls.LEGENDARY]
 
+    @classmethod
+    def is_valid_rarity(cls, rarity: str) -> bool:
+        """Check if rarity is valid"""
+        return rarity in cls.all_rarities()
+
 
 class ItemCondition:
     """Condition levels for items"""
@@ -65,6 +70,11 @@ class ItemCondition:
     def all_conditions(cls) -> List[str]:
         """Get all condition levels"""
         return [cls.POOR, cls.FAIR, cls.GOOD, cls.EXCELLENT, cls.MINT]
+
+    @classmethod
+    def is_valid_condition(cls, condition: str) -> bool:
+        """Check if condition is valid"""
+        return condition in cls.all_conditions()
 
 
 class ShopQuality:
@@ -240,12 +250,11 @@ class ShopEconomy:
         """Calculate economic health status"""
         if self.gold_reserves > 5000:
             return "thriving"
-        elif self.gold_reserves > 2000:
+        if self.gold_reserves > 2000:
             return "stable"
-        elif self.gold_reserves > 500:
+        if self.gold_reserves > 500:
             return "struggling"
-        else:
-            return "failing"
+        return "failing"
 
 
 @dataclass
@@ -347,12 +356,11 @@ class Shop:
         """Get discount based on reputation"""
         if reputation > 80:
             return 0.15  # 15% discount
-        elif reputation > 60:
+        if reputation > 60:
             return 0.10  # 10% discount
-        elif reputation > 40:
+        if reputation > 40:
             return 0.05  # 5% discount
-        else:
-            return 0.0  # No discount
+        return 0.0  # No discount
 
     def get_summary(self) -> Dict[str, Any]:
         """Get complete shop summary"""

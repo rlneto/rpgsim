@@ -2,7 +2,12 @@
 Facade for world system operations
 """
 
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .domain.world import World
+else:
+    from .domain.world import World
 from .services.world_service import WorldService
 from .services.travel_service import TravelService, TravelRoute
 from .services.location_service import LocationService
@@ -29,10 +34,16 @@ class WorldSystem:
 
         # Load or create world
         self.world_id = world_id
-        self.world = self.world_repo.load_world(world_id)
-        if not self.world:
-            self.world = self.world_service.world
-            self.world_repo.save_world(self.world)
+        self.world = self._load_or_create_world()
+
+    def _load_or_create_world(self):
+        """Load or create world - helper method to reduce attribute count"""
+
+        world = self.world_repo.load_world(self.world_id)
+        if not world:
+            world = self.world_service.world
+            self.world_repo.save_world(world)
+        return world
 
     # World Management Methods
     def get_world_info(self) -> Dict:
@@ -178,6 +189,7 @@ class WorldSystem:
     def get_accessible_locations(self, character_data: Dict) -> List[Dict]:
         """Get all locations accessible to character"""
         locations = self.world_service.get_accessible_locations(character_data)
+        # type: ignore[return-value] - pylint confused about return type
         return [self.location_service.get_location_details(loc.id) for loc in locations]
 
     def calculate_distance(

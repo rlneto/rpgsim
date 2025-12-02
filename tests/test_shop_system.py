@@ -20,8 +20,17 @@ from typing import List, Dict, Any, Optional, Tuple
 from unittest.mock import Mock, patch
 
 from core.systems.shop import (
-    ShopType, ItemRarity, ItemCondition, ShopQuality,
-    ShopItem, ShopInventory, ShopEconomy, Pricing, Transaction, Shop, ShopSystem
+    ShopType,
+    ItemRarity,
+    ItemCondition,
+    ShopQuality,
+    ShopItem,
+    ShopInventory,
+    ShopEconomy,
+    Pricing,
+    Transaction,
+    Shop,
+    ShopSystem,
 )
 from core.models import Location, LocationType
 
@@ -33,14 +42,16 @@ class TestShopSystem:
         """Test creating basic shop with valid data."""
         shop_system = ShopSystem()
 
-        shop = shop_system.create_shop(
+        from core.systems.shop.facade import ShopConfig
+
+        config = ShopConfig(
             shop_id="basic_shop",
             name="Basic Shop",
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
-            location="test_city",
-            quality_level=ShopQuality.STANDARD
+            location="test_location",
         )
+        shop = shop_system.create_shop(config)
 
         assert shop.name == "Basic Shop"
         assert shop.location == "test_city"
@@ -58,7 +69,7 @@ class TestShopSystem:
             shop_type=ShopType.WEAPONS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.PREMIUM
+            quality_level=ShopQuality.PREMIUM,
         )
 
         assert 15 <= len(shop.inventory.items) <= 30
@@ -73,7 +84,7 @@ class TestShopSystem:
             shop_type=ShopType.POTIONS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         # Force refresh
@@ -98,7 +109,7 @@ class TestShopSystem:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         assert shop.name == shop_name
@@ -118,7 +129,7 @@ class TestShopInventory:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         assert 15 <= len(shop.inventory.items) <= 30
@@ -132,7 +143,7 @@ class TestShopInventory:
             shop_type=ShopType.ARMOR,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         # Mock time to force refresh
@@ -149,11 +160,14 @@ class TestShopInventory:
             shop_type=ShopType.MAGIC_ITEMS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.LUXURY
+            quality_level=ShopQuality.LUXURY,
         )
 
-        rare_items = [item for item in shop.inventory.items
-                     if item.rarity in [ItemRarity.RARE, ItemRarity.LEGENDARY]]
+        rare_items = [
+            item
+            for item in shop.inventory.items
+            if item.rarity in [ItemRarity.RARE, ItemRarity.LEGENDARY]
+        ]
 
         # High quality magic shops should have some rare items
         assert len(rare_items) >= 0  # Some rare items should exist
@@ -168,7 +182,7 @@ class TestShopInventory:
             shop_type=ShopType.WEAPONS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         armor_shop = shop_system.create_shop(
@@ -177,11 +191,13 @@ class TestShopInventory:
             shop_type=ShopType.ARMOR,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         # Different shop types should have different inventory distributions
-        weapon_items = {item.name.split()[0] for item in weapon_shop.inventory.items[:10]}
+        weapon_items = {
+            item.name.split()[0] for item in weapon_shop.inventory.items[:10]
+        }
         armor_items = {item.name.split()[0] for item in armor_shop.inventory.items[:10]}
 
         # Should have some variety in inventory
@@ -205,7 +221,7 @@ class TestShopInventory:
                 shop_type=ShopType.GENERAL_GOODS,
                 owner="test_owner",
                 location="test_city",
-                quality_level=ShopQuality.STANDARD
+                quality_level=ShopQuality.STANDARD,
             )
             shops.append(shop)
 
@@ -232,7 +248,7 @@ class TestShopPricing:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="city_1",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         shop_city2 = shop_system.create_shop(
@@ -241,7 +257,7 @@ class TestShopPricing:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="city_2",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         # Get first item from each shop
@@ -266,7 +282,7 @@ class TestShopPricing:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         item = shop.inventory.items[0]
@@ -293,7 +309,7 @@ class TestShopPricing:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         item = shop.inventory.items[0]
@@ -318,13 +334,15 @@ class TestShopPricing:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         item = shop.inventory.items[0]
         player_id = "test_player"
 
-        price_single = shop_system.calculate_buy_price(shop, item, player_id, quantity=1)
+        price_single = shop_system.calculate_buy_price(
+            shop, item, player_id, quantity=1
+        )
         price_bulk = shop_system.calculate_buy_price(shop, item, player_id, quantity=10)
 
         # Bulk purchases should have valid pricing
@@ -351,6 +369,7 @@ class TestShopPricing:
 
         # Create a mock item and shop
         from unittest.mock import Mock
+
         item = Mock()
         item.base_value = base_price
         item.stock = 5
@@ -382,7 +401,7 @@ class TestShopEconomy:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         # Shop should have reasonable gold reserves
@@ -397,7 +416,7 @@ class TestShopEconomy:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         item = shop.inventory.items[0]
@@ -409,7 +428,7 @@ class TestShopEconomy:
             item=item,
             quantity=1,
             player_id="test_player",
-            transaction_type="buy"
+            transaction_type="buy",
         )
 
         assert transaction.success
@@ -424,7 +443,7 @@ class TestShopEconomy:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         # Create a new item to sell
@@ -436,7 +455,7 @@ class TestShopEconomy:
             rarity=ItemRarity.COMMON,
             condition=ItemCondition.EXCELLENT,
             stock=1,
-            category="test"
+            category="test",
         )
 
         original_inventory_count = len(shop.inventory.items)
@@ -447,7 +466,7 @@ class TestShopEconomy:
             item=new_item,
             quantity=1,
             player_id="test_player",
-            transaction_type="sell"
+            transaction_type="sell",
         )
 
         if transaction.success:
@@ -462,7 +481,7 @@ class TestShopEconomy:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         # Simulate economy with multiple customers
@@ -491,7 +510,7 @@ class TestShopEconomy:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         # Set custom gold amount
@@ -517,7 +536,7 @@ class TestShopTypes:
             shop_type=ShopType.WEAPONS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         assert weapon_shop.shop_type == ShopType.WEAPONS
@@ -532,7 +551,7 @@ class TestShopTypes:
             shop_type=ShopType.ARMOR,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         assert armor_shop.shop_type == ShopType.ARMOR
@@ -547,7 +566,7 @@ class TestShopTypes:
             shop_type=ShopType.MAGIC_ITEMS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         assert magic_shop.shop_type == ShopType.MAGIC_ITEMS
@@ -562,7 +581,7 @@ class TestShopTypes:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         assert general_shop.shop_type == ShopType.GENERAL_GOODS
@@ -573,21 +592,28 @@ class TestShopTypes:
         shop_system = ShopSystem()
 
         shops = []
-        for shop_type in [ShopType.WEAPONS, ShopType.ARMOR, ShopType.MAGIC_ITEMS, ShopType.POTIONS]:
+        for shop_type in [
+            ShopType.WEAPONS,
+            ShopType.ARMOR,
+            ShopType.MAGIC_ITEMS,
+            ShopType.POTIONS,
+        ]:
             shop = shop_system.create_shop(
                 shop_id=f"{shop_type}_shop",
                 name=f"{shop_type.title()} Shop",
                 shop_type=shop_type,
                 owner="test_owner",
                 location="test_city",
-                quality_level=ShopQuality.STANDARD
+                quality_level=ShopQuality.STANDARD,
             )
             shops.append(shop)
 
         # Each shop should have some unique items
         all_items = set()
         for shop in shops:
-            shop_items = {item.name for item in shop.inventory.items[:5]}  # First 5 items
+            shop_items = {
+                item.name for item in shop.inventory.items[:5]
+            }  # First 5 items
             all_items.update(shop_items)
 
         assert len(all_items) >= 10  # Should have variety across shop types
@@ -605,7 +631,7 @@ class TestTradingSystem:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         item = shop.inventory.items[0]
@@ -629,7 +655,7 @@ class TestTradingSystem:
             rarity=ItemRarity.COMMON,
             condition=ItemCondition.GOOD,
             stock=1,
-            category="test"
+            category="test",
         )
 
         rare_item = ShopItem(
@@ -640,7 +666,7 @@ class TestTradingSystem:
             rarity=ItemRarity.RARE,
             condition=ItemCondition.GOOD,
             stock=1,
-            category="test"
+            category="test",
         )
 
         shop = shop_system.create_shop(
@@ -649,10 +675,12 @@ class TestTradingSystem:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
-        common_price = shop_system.calculate_sell_price(shop, common_item, "test_player")
+        common_price = shop_system.calculate_sell_price(
+            shop, common_item, "test_player"
+        )
         rare_price = shop_system.calculate_sell_price(shop, rare_item, "test_player")
 
         # Rare items should generally be worth more
@@ -668,7 +696,7 @@ class TestTradingSystem:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         # Set very low gold
@@ -682,7 +710,7 @@ class TestTradingSystem:
             item=item,
             quantity=1,
             player_id="test_player",
-            transaction_type="sell"  # Player selling to shop
+            transaction_type="sell",  # Player selling to shop
         )
 
         # Transaction should handle gold limitations
@@ -702,13 +730,15 @@ class TestTradingSystem:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         item = shop.inventory.items[0]
 
         price_low_rep = shop_system.calculate_sell_price(shop, item, "test_player_low")
-        price_high_rep = shop_system.calculate_sell_price(shop, item, "test_player_high")
+        price_high_rep = shop_system.calculate_sell_price(
+            shop, item, "test_player_high"
+        )
 
         # Both should have valid prices
         assert price_low_rep.final_price >= 0
@@ -728,7 +758,7 @@ class TestTradingSystem:
             "common": ItemRarity.COMMON,
             "uncommon": ItemRarity.UNCOMMON,
             "rare": ItemRarity.RARE,
-            "legendary": ItemRarity.LEGENDARY
+            "legendary": ItemRarity.LEGENDARY,
         }
 
         item = ShopItem(
@@ -739,7 +769,7 @@ class TestTradingSystem:
             rarity=rarity_map[item_rarity],
             condition=ItemCondition.GOOD,
             stock=1,
-            category="test"
+            category="test",
         )
 
         shop = shop_system.create_shop(
@@ -748,7 +778,7 @@ class TestTradingSystem:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         shop_system.player_reputation["test_player"] = {"test_city": reputation_level}
@@ -778,7 +808,7 @@ class TestShopPerformance:
                 shop_type=ShopType.GENERAL_GOODS,
                 owner="test_owner",
                 location="test_city",
-                quality_level=ShopQuality.STANDARD
+                quality_level=ShopQuality.STANDARD,
             )
             shops.append(shop)
 
@@ -798,7 +828,7 @@ class TestShopPerformance:
                 shop_type=ShopType.GENERAL_GOODS,
                 owner="test_owner",
                 location="test_city",
-                quality_level=ShopQuality.STANDARD
+                quality_level=ShopQuality.STANDARD,
             )
             shops.append(shop)
 
@@ -823,7 +853,7 @@ class TestShopIntegration:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="thraben",  # Known city from world
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         assert shop.location == "thraben"
@@ -837,7 +867,7 @@ class TestShopIntegration:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         # Test player-specific features
@@ -858,7 +888,7 @@ class TestShopIntegration:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="test_city",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         # All shop items should be valid ShopItem objects
@@ -883,7 +913,7 @@ class TestShopIntegration:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="gavony",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         shop2 = shop_system.create_shop(
@@ -892,7 +922,7 @@ class TestShopIntegration:
             shop_type=ShopType.GENERAL_GOODS,
             owner="test_owner",
             location="thraben",
-            quality_level=ShopQuality.STANDARD
+            quality_level=ShopQuality.STANDARD,
         )
 
         # Shops should have location-specific economies

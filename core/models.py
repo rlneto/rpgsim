@@ -56,6 +56,7 @@ class CharacterStats(BaseModel):
     constitution: int = Field(default=10, ge=1, le=20, description="Health and stamina")
 
     @field_validator("*", mode="before")
+    @classmethod
     def validate_stats_are_integers(cls, v):
         """Ensure all stats are integers."""
         if not isinstance(v, int):
@@ -104,6 +105,7 @@ class Character(BaseModel):
     skills: Dict[str, int] = Field(default_factory=dict, description="Character skills")
 
     @field_validator("name")
+    @classmethod
     def validate_character_name(cls, v):
         """Validate character name with explicit rules."""
         if not v or not v.strip():
@@ -124,6 +126,7 @@ class Character(BaseModel):
         return v.strip()
 
     @field_validator("max_hp")
+    @classmethod
     def validate_max_hp_positive(cls, v):
         """Ensure max HP is positive."""
         if v <= 0:
@@ -147,7 +150,7 @@ class Character(BaseModel):
 
     def get_hp_percentage(self) -> float:
         """Get HP as percentage of maximum."""
-        if self.max_hp == 0:
+        if not self.max_hp:
             return 0.0
         return (self.hp / self.max_hp) * 100.0
 
@@ -204,8 +207,10 @@ class Character(BaseModel):
         if not ability or not ability.strip():
             raise ValueError("Ability cannot be empty")
 
-        if ability not in self.abilities:
-            self.abilities.append(ability)
+        abilities_list: List[str] = self.abilities
+        if ability not in abilities_list:
+            abilities_list.append(ability)
+            self.abilities = abilities_list
             return True
         return False
 
@@ -232,7 +237,9 @@ class Character(BaseModel):
             "inventory_size": len(self.inventory),
             "quests_completed": len(self.quests_completed),
             "is_alive": self.is_alive(),
-            "total_stats": self.stats.get_total_stats(),
+            "total_stats": self.stats.get_total_stats()
+            if hasattr(self.stats, "get_total_stats")
+            else {},
         }
 
 
@@ -286,6 +293,7 @@ class Item(BaseModel):
     max_stack: int = Field(default=1, ge=1, description="Maximum stack size")
 
     @field_validator("name")
+    @classmethod
     def validate_item_name(cls, v):
         """Validate item name."""
         if not v or not v.strip():
@@ -297,6 +305,7 @@ class Item(BaseModel):
         return v.strip()
 
     @field_validator("max_stack")
+    @classmethod
     def validate_max_stack_for_non_stackable(cls, v, info):
         """Ensure max_stack is 1 for non-stackable items."""
         stackable = info.data.get("stackable")
@@ -364,6 +373,7 @@ class Enemy(BaseModel):
     )
 
     @field_validator("hp")
+    @classmethod
     def validate_hp_not_exceed_max(cls, v, info):
         """Ensure HP does not exceed max HP."""
         max_hp = info.data.get("max_hp")
@@ -372,6 +382,7 @@ class Enemy(BaseModel):
         return v
 
     @field_validator("max_hp")
+    @classmethod
     def validate_max_hp_positive(cls, v):
         """Ensure max HP is positive."""
         if v <= 0:
@@ -401,7 +412,7 @@ class Enemy(BaseModel):
 
     def get_hp_percentage(self) -> float:
         """Get HP as percentage of maximum."""
-        if self.max_hp == 0:
+        if not self.max_hp:
             return 0.0
         return (self.hp / self.max_hp) * 100.0
 
@@ -469,6 +480,7 @@ class Quest(BaseModel):
     )
 
     @field_validator("name")
+    @classmethod
     def validate_quest_name(cls, v):
         """Validate quest name."""
         if not v or not v.strip():
@@ -477,6 +489,7 @@ class Quest(BaseModel):
         return v.strip()
 
     @field_validator("objectives")
+    @classmethod
     def validate_objectives_not_empty(cls, v):
         """Ensure objectives list is not empty."""
         if not v:
@@ -554,6 +567,7 @@ class Location(BaseModel):
     )
 
     @field_validator("name")
+    @classmethod
     def validate_location_name(cls, v):
         """Validate location name."""
         if not v or not v.strip():
@@ -625,7 +639,7 @@ class GameState(BaseModel):
 
     def is_new_game(self) -> bool:
         """Check if this is a new game."""
-        return self.player is None and self.world_time == 0 and self.day == 1
+        return self.player is None and not self.world_time and self.day == 1
 
     def has_player(self) -> bool:
         """Check if game has a player character."""
@@ -641,10 +655,12 @@ class GameState(BaseModel):
         }
 
         if self.player:
-            progress["player"] = self.player.get_summary()
-            progress["player_level"] = self.player.level
-            progress["player_experience"] = self.player.experience
-            progress["player_gold"] = self.player.gold
+            # type: ignore[attr-defined]  # Pydantic FieldInfo false positives
+            player_obj = self.player
+            progress["player"] = player_obj.get_summary()  # type: ignore[attr-defined]
+            progress["player_level"] = player_obj.level  # type: ignore[attr-defined]
+            progress["player_experience"] = player_obj.experience  # type: ignore[attr-defined]
+            progress["player_gold"] = player_obj.gold  # type: ignore[attr-defined]
             progress["quests_active"] = len(self.quests_active)
             progress["quests_completed"] = len(self.quests_completed)
 
@@ -656,7 +672,8 @@ class GameState(BaseModel):
 
     def get_flag(self, key: str, default: Any = None) -> Any:
         """Get game flag."""
-        return self.flags.get(key, default)
+        flags_dict = self.flags  # type: ignore[attr-defined]
+        return flags_dict.get(key, default)  # type: ignore[attr-defined]
 
     def has_flag(self, key: str) -> bool:
         """Check if game flag exists."""
