@@ -22,7 +22,7 @@ pydantic-settings>=2.1.0        # Configuration management
 email-validator>=2.1.0           # Email validation utilities
 
 # ================== TESTING LAYER ==================
-behave>=2.0.0                  # BDD framework with async support
+behave>=1.2.6                  # BDD framework with async support
 hypothesis>=6.100.0            # Property-based testing
 pytest>=8.0.0                  # Testing framework
 pytest-asyncio>=0.23.0        # Async test execution
@@ -86,7 +86,7 @@ jinja2>=3.1.0                   # Template rendering
 # - textual>=2.0.0: Primary graphical interface (mandatory)
 # - rich>=14.0.0: Terminal rich graphics (mandatory)
 # - pygame>=2.5.0: True graphics fallback (mandatory for production)
-# - behave>=2.0.0: BDD testing with GUI simulation (mandatory)
+# - behave>=1.2.6: BDD testing with GUI simulation (mandatory)
 # - selenium>=4.16.0: E2E GUI testing (mandatory)
 
 # ================== EXCLUSION POLICY ==================
