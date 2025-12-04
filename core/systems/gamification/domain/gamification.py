@@ -10,42 +10,52 @@ import random
 
 
 class DifficultyAdjustmentType(Enum):
-    """Types of difficulty adjustment"""
-    STATIC = "static"
-    DYNAMIC = "dynamic"
-    ADAPTIVE = "adaptive"
-    USER_SELECTED = "user_selected"
+    """Types of difficulty adjustment."""
+
+    STATISTICAL_SMOOTHING = "statistical_smoothing"
+    PERFORMANCE_BASED = "performance_based"
+    FLOW_OPTIMIZED = "flow_optimized"
+    MICRO_ADJUSTMENT = "micro_adjustment"
+    INTERVENTION_TRIGGERED = "intervention_triggered"
 
 
 class EngagementMetricType(Enum):
-    """Types of engagement metrics"""
+    """Types of engagement metrics."""
+
     SESSION_DURATION = "session_duration"
     ACTION_FREQUENCY = "action_frequency"
     SUCCESS_RATE = "success_rate"
     EXPLORATION_RATE = "exploration_rate"
     SOCIAL_INTERACTION = "social_interaction"
     ACHIEVEMENT_PROGRESS = "achievement_progress"
+    FOCUS_LEVEL = "focus_level"
+    CHALLENGE_PERCEPTION = "challenge_perception"
 
 
 class RewardScheduleType(Enum):
-    """Types of reward schedules"""
-    FIXED_RATIO = "fixed_ratio"
+    """Types of reward schedules."""
+
     VARIABLE_RATIO = "variable_ratio"
     FIXED_INTERVAL = "fixed_interval"
     VARIABLE_INTERVAL = "variable_interval"
+    PROGRESSIVE_JACKPOT = "progressive_jackpot"
+    PREDICTION_ERROR = "prediction_error"
 
 
 class InterventionType(Enum):
-    """Types of interventions"""
+    """Types of player interventions."""
+
     DYNAMIC_DIFFICULTY = "dynamic_difficulty"
     CONTENT_RECOMMENDATION = "content_recommendation"
-    REWARD_BONUS = "reward_bonus"
-    ACHIEVEMENT_MILESTONE = "achievement_milestone"
     SOCIAL_CONNECTION_PROMPT = "social_connection_prompt"
+    ACHIEVEMENT_MILESTONE = "achievement_milestone"
+    REWARD_BONUS = "reward_bonus"
+    STORY_PROGRESSION_HINT = "story_progression_hint"
 
 
 class ContentVarietyType(Enum):
-    """Types of content for variety tracking"""
+    """Content variety categories."""
+
     COMBAT = "combat"
     EXPLORATION = "exploration"
     PUZZLES = "puzzles"
@@ -55,23 +65,55 @@ class ContentVarietyType(Enum):
 
 
 class MotivationPillar(Enum):
-    """Pillars of motivation (SDT)"""
+    """Self-Determination Theory pillars."""
+
     AUTONOMY = "autonomy"
-    MASTERY = "mastery"
-    PURPOSE = "purpose"
+    COMPETENCE = "competence"
     RELATEDNESS = "relatedness"
 
 
 class ProgressVisualizationType(Enum):
-    """Types of progress visualization scaling"""
-    LINEAR = "linear"
+    """Progress visualization types."""
+
     LOGARITHMIC = "logarithmic"
+    LINEAR = "linear"
+    DIMINISHING_RETURNS = "diminishing_returns"
     EXPONENTIAL = "exponential"
 
 
 @dataclass
+class Achievement:
+    id: str
+    name: str
+    description: str
+    unlocked: bool = False
+
+
+@dataclass
+class Badge:
+    id: str
+    name: str
+    icon: str
+
+
+@dataclass
+class Progress:
+    player_id: str
+    level: int
+    experience: int
+
+
+@dataclass
+class Reward:
+    player_id: str
+    item: str
+    quantity: int
+
+
+@dataclass
 class PerformanceMetrics:
-    """Metrics related to player performance"""
+    """Player performance metrics for DDA."""
+
     success_rate: float = 0.0
     time_efficiency: float = 0.0
     resource_efficiency: float = 0.0
@@ -79,209 +121,251 @@ class PerformanceMetrics:
     recent_encounters: List[Dict[str, Any]] = field(default_factory=list)
 
     def calculate_score(self) -> float:
-        """Calculate weighted performance score"""
-        # Weights: 0.4 success, 0.3 time, 0.3 resource
+        """Calculate weighted performance score."""
         self.overall_score = (
-            self.success_rate * 0.4 +
-            self.time_efficiency * 0.3 +
-            self.resource_efficiency * 0.3
+            self.success_rate * 0.4
+            + self.time_efficiency * 0.3
+            + self.resource_efficiency * 0.3
         )
-        return self.overall_score
+        return max(0.0, min(1.0, self.overall_score))
 
-    def add_encounter(self, success: bool, time_taken: float, resources_used: float) -> None:
-        """Add encounter result"""
+    def add_encounter(
+        self, success: bool, time_taken: int, resources_used: float
+    ) -> None:
+        """Add encounter data and update metrics."""
         encounter = {
-            'success': success,
-            'time_taken': time_taken,
-            'resources_used': resources_used
+            "success": success,
+            "time_taken": time_taken,
+            "resources_used": resources_used,
+            "timestamp": time.time(),
         }
         self.recent_encounters.append(encounter)
 
-        # Keep last 10
         if len(self.recent_encounters) > 10:
             self.recent_encounters.pop(0)
 
-        # Update metrics
-        success_count = sum(1 for e in self.recent_encounters if e['success'])
-        self.success_rate = success_count / len(self.recent_encounters)
+        successes = sum(1 for e in self.recent_encounters if e["success"])
+        self.success_rate = successes / len(self.recent_encounters)
 
-        # Simplified efficiency updates for now
-        # Ideally would compare against expected values
-        self.time_efficiency = max(0.0, 1.0 - (time_taken / 600)) # Normalize to 10 mins?
-        self.resource_efficiency = max(0.0, 1.0 - resources_used)
+        avg_time = sum(e["time_taken"] for e in self.recent_encounters) / len(
+            self.recent_encounters
+        )
+        self.time_efficiency = max(
+            0.0, 1.0 - (avg_time - 60) / 240
+        )
+
+        self.resource_efficiency = sum(
+            1 - e["resources_used"] for e in self.recent_encounters
+        ) / len(self.recent_encounters)
 
 
 @dataclass
 class FlowStateMetrics:
-    """Metrics related to flow state"""
+    """Flow state monitoring metrics."""
+
     challenge_skill_ratio: float = 1.0
     engagement_level: float = 0.5
     focus_metrics: Dict[str, float] = field(default_factory=dict)
     emotional_indicators: Dict[str, float] = field(default_factory=dict)
-    flow_indicators: List[str] = field(default_factory=list)
+    flow_indicators: List[bool] = field(default_factory=list)
+    last_adjustment: float = 0.0
 
     def calculate_flow_score(self) -> float:
-        """Calculate flow score based on challenge-skill ratio"""
-        optimal_ratio = 1.05
-        tolerance = 0.1
-
-        diff = abs(self.challenge_skill_ratio - optimal_ratio)
-
-        if diff <= tolerance:
+        """Calculate flow state score using Chen equation."""
+        if 0.9 <= self.challenge_skill_ratio <= 1.2:
             return 1.0
+        elif self.challenge_skill_ratio < 0.9:
+            return self.challenge_skill_ratio / 0.9
+        else:
+            return max(0.0, 1.0 - (self.challenge_skill_ratio - 1.2) / 2.0)
 
-        # Linear drop-off
-        score = max(0.0, 1.0 - (diff / 0.5))
-
-        # Test specific logic adjustment to match: 0.6 -> ~0.66
-        # If ratio is 0.6, diff is 0.45. 1 - 0.45/0.5 = 0.1 which is too low.
-        # The test expects 0.6 / 0.9 = 0.66. It seems to scale by ratio/target when low?
-
-        if self.challenge_skill_ratio < optimal_ratio - tolerance:
-             return self.challenge_skill_ratio / (optimal_ratio - tolerance * 1.5) # Approximate
-
-        return score
-
-    def update_engagement(self, actions_per_minute: float, decision_accuracy: float,
-                          error_rate: float, enjoyment: float, frustration: float,
-                          motivation: float) -> None:
-        """Update engagement metrics"""
+    def update_engagement(
+        self,
+        actions_per_minute: float,
+        decision_accuracy: float,
+        error_rate: float,
+        enjoyment: float,
+        frustration: float,
+        motivation: float,
+    ) -> None:
+        """Update engagement metrics."""
         self.focus_metrics = {
-            'actions_per_minute': actions_per_minute,
-            'decision_accuracy': decision_accuracy,
-            'error_rate': error_rate
+            "actions_per_minute": actions_per_minute,
+            "decision_accuracy": decision_accuracy,
+            "error_rate": error_rate,
         }
+
         self.emotional_indicators = {
-            'enjoyment_level': enjoyment,
-            'frustration_level': frustration,
-            'motivation_level': motivation
+            "enjoyment_level": enjoyment,
+            "frustration_level": frustration,
+            "motivation_level": motivation,
         }
+
+        self.engagement_level = (
+            enjoyment * 0.3
+            + motivation * 0.3
+            + decision_accuracy * 0.2
+            + actions_per_minute / 25 * 0.2
+        )
 
 
 @dataclass
 class RewardEvent:
-    """A reward event"""
+    """Individual reward event data."""
+
+    id: int
     type: str
     difficulty: float
-    time_investment: float
+    time_investment: int
     skill_required: float
-    received_reward: float
+    expected_reward: int
+    received_reward: int
     prediction_error: float
-    novelty_factor: float
     motivation_index: float
+    novelty_factor: float
+    timestamp: float
 
 
 @dataclass
 class RewardSchedule:
-    """Reward schedule configuration"""
+    """Reinforcement learning reward schedule configuration."""
+
     schedule_type: RewardScheduleType
     variable_ratio_min: int = 5
     variable_ratio_max: int = 10
+    rare_reward_base_prob: float = 0.05
     adaptation_enabled: bool = True
 
-    def should_reward(self, attempts: int) -> bool:
-        """Check if reward should be given"""
+    def should_reward(self, actions_since_last_reward: int) -> bool:
+        """Determine if reward should be given based on schedule."""
         if self.schedule_type == RewardScheduleType.VARIABLE_RATIO:
-            threshold = random.randint(self.variable_ratio_min, self.variable_ratio_max)
-            return attempts >= threshold
+            vr_ratio = random.randint(self.variable_ratio_min, self.variable_ratio_max)
+            return actions_since_last_reward >= vr_ratio
         return False
 
-    def calculate_rare_reward_probability(self, encounters: int) -> float:
-        """Calculate probability of rare reward"""
-        # P = 0.05 * (1 - e^(-n/20))
-        if encounters == 0:
-            return 0.0
-        return 0.05 * (1 - math.exp(-encounters / 20.0))
+    def calculate_rare_reward_probability(self, encounters_since_last: int) -> float:
+        """Calculate rare reward probability using P = 0.05 * (1 - e^(-n/20))."""
+        n = encounters_since_last
+        return self.rare_reward_base_prob * (1 - math.exp(-n / 20))
 
 
 @dataclass
 class EngagementScore:
-    """Engagement scoring system"""
+    """Comprehensive engagement score calculation."""
+
     individual_metrics: Dict[str, float] = field(default_factory=dict)
-    weights: Dict[str, float] = field(default_factory=lambda: {
-        'session_duration': 0.25,
-        'action_frequency': 0.20,
-        'success_rate': 0.15,
-        'exploration_rate': 0.15,
-        'social_interaction': 0.10,
-        'achievement_progress': 0.15
-    })
+    weights: Dict[str, float] = field(default_factory=dict)
     overall_score: float = 0.0
     engagement_level: str = "medium"
+    last_update: float = field(default_factory=time.time)
 
-    def calculate_score(self, metrics: Dict[str, float]) -> float:
-        """Calculate weighted engagement score"""
+    def calculate_score(
+        self, metrics: Dict[str, float], weights: Optional[Dict[str, float]] = None
+    ) -> float:
+        """Calculate weighted engagement score."""
+        default_weights = {
+            "session_duration_weight": 0.25,
+            "action_frequency_weight": 0.20,
+            "success_rate_weight": 0.15,
+            "exploration_rate_weight": 0.15,
+            "social_interaction_weight": 0.10,
+            "achievement_progress_weight": 0.15,
+        }
+
+        self.weights = weights or default_weights
         self.individual_metrics = metrics
-        score = 0.0
 
-        for key, value in metrics.items():
-            weight = self.weights.get(key, 0.0)
-            score += value * weight
+        self.overall_score = 0.0
+        for metric, value in metrics.items():
+            weight_key = f"{metric}_weight"
+            if weight_key in self.weights:
+                self.overall_score += value * self.weights[weight_key]
 
-        self.overall_score = score
-
-        if score < 0.4:
-            self.engagement_level = "low"
-        elif score > 0.7:
+        if self.overall_score > 0.7:
             self.engagement_level = "high"
-        else:
+        elif self.overall_score > 0.4:
             self.engagement_level = "medium"
+        else:
+            self.engagement_level = "low"
 
-        return score
+        self.last_update = time.time()
+        return self.overall_score
 
 
 @dataclass
 class ChurnRiskAnalysis:
-    """Churn risk analysis"""
+    """Player churn risk prediction."""
+
     behavioral_markers: Dict[str, float] = field(default_factory=dict)
     weighted_score: float = 0.0
     churn_probability: float = 0.0
     risk_level: str = "low"
     model_confidence: float = 0.85
+    last_analysis: float = field(default_factory=time.time)
 
     def calculate_risk(self, markers: Dict[str, float]) -> float:
-        """Calculate churn risk"""
+        """Calculate churn probability using behavioral markers."""
         self.behavioral_markers = markers
 
-        # Simple weighted sum for score (weights implied 1.0 for simplicity or average)
-        score = sum(markers.values()) / len(markers)
-        self.weighted_score = score
+        marker_weights = {
+            "decreasing_session_length": 0.25,
+            "reduced_social_interaction": 0.20,
+            "achievement_stagnation": 0.15,
+            "increasing_failure_rate": 0.15,
+            "login_frequency_decline": 0.15,
+            "negative_sentiment_indicators": 0.10,
+        }
 
-        # Sigmoid function approximation for probability
-        # Test expects 0.5 input -> 0.5 output
-        self.churn_probability = score
+        self.weighted_score = 0.0
+        for marker, value in markers.items():
+            if marker in marker_weights:
+                self.weighted_score += value * marker_weights[marker]
 
-        if self.churn_probability < 0.3:
-            self.risk_level = "low"
-        elif self.churn_probability > 0.7:
+        self.churn_probability = 1 / (1 + math.exp(-5 * (self.weighted_score - 0.5)))
+
+        if self.churn_probability > 0.7:
             self.risk_level = "high"
-        else:
+        elif self.churn_probability > 0.3:
             self.risk_level = "medium"
+        else:
+            self.risk_level = "low"
 
+        self.last_analysis = time.time()
         return self.churn_probability
 
 
 @dataclass
 class ProgressVisualization:
-    """Progress visualization configuration"""
+    """Progress visualization using Weber-Fechner law."""
+
     level_progress: float = 0.0
+    skill_progress: float = 0.0
+    achievement_progress: float = 0.0
+    exploration_progress: float = 0.0
+    overall_progress: float = 0.0
     scaling_type: ProgressVisualizationType = ProgressVisualizationType.LOGARITHMIC
 
-    def apply_logarithmic_scaling(self, value: float) -> float:
-        """Apply logarithmic scaling to progress value"""
-        if value <= 0:
+    def apply_logarithmic_scaling(
+        self, progress: float, k: float = 0.5, s0: float = 0.01
+    ) -> float:
+        """Apply Weber-Fechner logarithmic scaling: ΔP = k * ln(S/S₀)."""
+        if progress <= 0:
             return 0.0
 
-        # Logarithmic scaling that maps 0-1 to 0-1 with compression at high end
-        # y = log(x + 1) / log(2) ? No, that's 0->0, 1->1
-        return math.log(value + 1) / math.log(2)
+        current_state = max(progress, s0)
+        scaled_value = k * math.log(current_state / s0)
+        return min(1.0, max(0.0, scaled_value))
 
-    def calculate_scaled_progress(self, metrics: Dict[str, float]) -> Dict[str, float]:
-        """Calculate scaled progress for metrics"""
-        result = {}
-        for key, value in metrics.items():
+    def calculate_scaled_progress(
+        self, raw_metrics: Dict[str, float]
+    ) -> Dict[str, float]:
+        """Calculate scaled progress metrics."""
+        scaled = {}
+
+        for metric, value in raw_metrics.items():
             if self.scaling_type == ProgressVisualizationType.LOGARITHMIC:
-                result[key] = self.apply_logarithmic_scaling(value)
+                scaled[metric] = self.apply_logarithmic_scaling(value)
             else:
-                result[key] = value
-        return result
+                scaled[metric] = value
+
+        return scaled

@@ -23,10 +23,11 @@ from core.systems.gamification import (
     ProgressVisualizationType, PerformanceMetrics, FlowStateMetrics,
     RewardEvent, RewardSchedule, EngagementScore, ChurnRiskAnalysis,
     ProgressVisualization, DynamicDifficultyAdjustment,
-    FlowStateOptimizer, RewardSystem, NeuroadaptiveEngagementSystem,
-    ProgressVisualizationSystem, ContentVarietyOptimizer,
+    FlowStateOptimizer, NeuroadaptiveEngagementSystem,
+    ContentVarietyOptimizer,
     InterventionSystem, GamificationSystem,
-    get_gamification_system, create_gamification_system
+    get_gamification_system, create_gamification_system,
+    RewardService, ProgressService
 )
 
 
@@ -505,12 +506,12 @@ class TestFlowStateOptimizer(unittest.TestCase):
         self.assertGreater(result, current_difficulty)
 
 
-class TestRewardSystem(unittest.TestCase):
-    """Test RewardSystem functionality."""
+class TestRewardService(unittest.TestCase):
+    """Test RewardService functionality."""
 
     def setUp(self):
         """Set up test fixtures."""
-        self.reward_system = RewardSystem()
+        self.reward_system = RewardService()
 
     def test_initialization(self):
         """Test reward system initialization."""
@@ -663,12 +664,12 @@ class TestNeuroadaptiveEngagementSystem(unittest.TestCase):
         self.assertIsNone(intervention_type)
 
 
-class TestProgressVisualizationSystem(unittest.TestCase):
-    """Test ProgressVisualizationSystem functionality."""
+class TestProgressService(unittest.TestCase):
+    """Test ProgressService functionality."""
 
     def setUp(self):
         """Set up test fixtures."""
-        self.progress_system = ProgressVisualizationSystem()
+        self.progress_system = ProgressService()
 
     def test_initialization(self):
         """Test progress system initialization."""

@@ -9,10 +9,12 @@ from .domain.gamification import (
     ProgressVisualization
 )
 from .services.gamification_service import (
-    DynamicDifficultyAdjustment, FlowStateOptimizer, RewardSystem,
-    NeuroadaptiveEngagementSystem, ProgressVisualizationSystem,
+    DynamicDifficultyAdjustment, FlowStateOptimizer,
+    NeuroadaptiveEngagementSystem,
     ContentVarietyOptimizer, InterventionSystem
 )
+from .services.reward_service import RewardService
+from .services.progress_service import ProgressService
 from .facade import GamificationSystem, get_gamification_system, create_gamification_system
 
 __all__ = [
@@ -21,8 +23,7 @@ __all__ = [
     'ProgressVisualizationType', 'PerformanceMetrics', 'FlowStateMetrics',
     'RewardEvent', 'RewardSchedule', 'EngagementScore', 'ChurnRiskAnalysis',
     'ProgressVisualization', 'DynamicDifficultyAdjustment',
-    'FlowStateOptimizer', 'RewardSystem', 'NeuroadaptiveEngagementSystem',
-    'ProgressVisualizationSystem', 'ContentVarietyOptimizer',
-    'InterventionSystem', 'GamificationSystem',
-    'get_gamification_system', 'create_gamification_system'
+    'FlowStateOptimizer', 'NeuroadaptiveEngagementSystem', 'RewardService',
+    'ContentVarietyOptimizer', 'InterventionSystem', 'GamificationSystem',
+    'get_gamification_system', 'create_gamification_system', 'ProgressService'
 ]
