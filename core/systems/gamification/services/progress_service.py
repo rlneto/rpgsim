@@ -1,34 +1,56 @@
-"""
-Service for handling player progress.
-"""
-from ..domain.gamification import Progress
-from ..interfaces.repositories import IProgressRepository
+import math
+from typing import List
+
+from ..domain.gamification import ProgressVisualization
+
 
 class ProgressService:
-    """Service for managing player progress."""
-    def __init__(self, progress_repo: IProgressRepository):
-        self._progress_repo = progress_repo
+    def __init__(self):
+        self.visualization = ProgressVisualization()
+        self.experience_multiplier = 1.12
+        self.base_experience = 100
 
-    def add_experience(self, player_id: str, amount: int) -> Progress:
-        """Add experience to a player and handle leveling up."""
-        progress = self._progress_repo.get_by_player_id(player_id)
-        if not progress:
-            progress = Progress(player_id=player_id)
+    def calculate_experience_requirement(self, level: int) -> int:
+        if level == 1:
+            return self.base_experience
+        return int(self.base_experience * (self.experience_multiplier ** (level - 1)))
 
-        progress.experience += amount
+    def calculate_level_progress(self, current_exp: int, level_exp: int) -> float:
+        raw_progress = current_exp / max(1, level_exp)
+        return min(1.0, self.visualization.apply_logarithmic_scaling(raw_progress))
 
-        # Simple leveling logic
-        while progress.experience >= self._experience_for_level(progress.level):
-            progress.experience -= self._experience_for_level(progress.level)
-            progress.level += 1
+    def calculate_mastery_advancement(self, mastery_level: int) -> dict[str, float]:
+        effort_required = int(10 * (1.2 ** (mastery_level - 1)))
+        if mastery_level == 1:
+            advancement = 1.0
+        else:
+            advancement = 1.0 / math.sqrt(mastery_level - 1)
+        return {
+            "effort_required": effort_required,
+            "visible_advancement": min(1.0, max(0.1, advancement)),
+            "total_effort_to_level": effort_required,
+        }
 
-        self._progress_repo.save(progress)
-        return progress
+    def apply_logarithmic_scaling(
+        self, raw_progress: float, k: float = 0.5, s0: float = 0.01
+    ) -> float:
+        return self.visualization.apply_logarithmic_scaling(raw_progress, k, s0)
 
-    def get_progress(self, player_id: str) -> Progress:
-        """Get a player's progress."""
-        return self._progress_repo.get_by_player_id(player_id)
-
-    def _experience_for_level(self, level: int) -> int:
-        """Calculate the experience required for a given level."""
-        return 100 * level
+    def calculate_constant_perceived_effort(
+        self, progression_levels: List[float]
+    ) -> float:
+        perceived_efforts = []
+        k = 0.3
+        min_progress = 0.05
+        for level in progression_levels:
+            if level > min_progress:
+                perceived_effort = k * math.log(level / min_progress)
+            else:
+                perceived_effort = 0.0
+            perceived_efforts.append(perceived_effort)
+        avg_effort = sum(perceived_efforts) / len(perceived_efforts)
+        variance = sum((e - avg_effort) ** 2 for e in perceived_efforts) / len(
+            perceived_efforts
+        )
+        std_dev = math.sqrt(variance)
+        return std_dev / avg_effort if avg_effort > 0 else 0.0

@@ -1,75 +1,65 @@
-"""
-In-memory repository implementations for the Gamification System.
-"""
-from typing import List
+from typing import List, Optional
+
 from ..domain.gamification import Achievement, Badge, Progress, Reward
-from ..interfaces.repositories import IAchievementRepository, IBadgeRepository, IProgressRepository, IRewardRepository
+from ..interfaces.repositories import (
+    AchievementRepository,
+    BadgeRepository,
+    ProgressRepository,
+    RewardRepository,
+)
 
-class MemoryAchievementRepository(IAchievementRepository):
-    """In-memory implementation of an achievement repository."""
+
+class MemoryAchievementRepository(AchievementRepository):
     def __init__(self):
-        self._achievements: List[Achievement] = []
-
-    def get_all(self) -> List[Achievement]:
-        return self._achievements
-
-    def get_by_id(self, id: str) -> Achievement:
-        for achievement in self._achievements:
-            if achievement.id == id:
-                return achievement
-        return None
+        self._achievements = {}
 
     def add(self, achievement: Achievement) -> None:
-        self._achievements.append(achievement)
+        self._achievements[achievement.id] = achievement
 
-class MemoryBadgeRepository(IBadgeRepository):
-    """In-memory implementation of a badge repository."""
+    def get(self, achievement_id: str) -> Optional[Achievement]:
+        return self._achievements.get(achievement_id)
+
+    def list(self) -> List[Achievement]:
+        return list(self._achievements.values())
+
+    def update(self, achievement: Achievement) -> None:
+        if achievement.id in self._achievements:
+            self._achievements[achievement.id] = achievement
+
+
+class MemoryBadgeRepository(BadgeRepository):
     def __init__(self):
-        self._badges: List[Badge] = []
-
-    def get_all(self) -> List[Badge]:
-        return self._badges
-
-    def get_by_id(self, id: str) -> Badge:
-        for badge in self._badges:
-            if badge.id == id:
-                return badge
-        return None
+        self._badges = {}
 
     def add(self, badge: Badge) -> None:
-        self._badges.append(badge)
+        self._badges[badge.id] = badge
 
-class MemoryProgressRepository(IProgressRepository):
-    """In-memory implementation of a progress repository."""
+    def get(self, badge_id: str) -> Optional[Badge]:
+        return self._badges.get(badge_id)
+
+    def list(self) -> List[Badge]:
+        return list(self._badges.values())
+
+
+class MemoryProgressRepository(ProgressRepository):
     def __init__(self):
-        self._progress: List[Progress] = []
+        self._progress = {}
 
-    def get_by_player_id(self, player_id: str) -> Progress:
-        for progress in self._progress:
-            if progress.player_id == player_id:
-                return progress
-        return None
+    def get(self, player_id: str) -> Optional[Progress]:
+        return self._progress.get(player_id)
 
-    def save(self, progress: Progress) -> None:
-        for i, p in enumerate(self._progress):
-            if p.player_id == progress.player_id:
-                self._progress[i] = progress
-                return
-        self._progress.append(progress)
+    def update(self, progress: Progress) -> None:
+        self._progress[progress.player_id] = progress
 
-class MemoryRewardRepository(IRewardRepository):
-    """In-memory implementation of a reward repository."""
+
+class MemoryRewardRepository(RewardRepository):
     def __init__(self):
-        self._rewards: List[Reward] = []
-
-    def get_all(self) -> List[Reward]:
-        return self._rewards
-
-    def get_by_id(self, id: str) -> Reward:
-        for reward in self._rewards:
-            if reward.id == id:
-                return reward
-        return None
+        self._rewards = {}
 
     def add(self, reward: Reward) -> None:
-        self._rewards.append(reward)
+        if reward.player_id not in self._rewards:
+            self._rewards[reward.player_id] = []
+        self._rewards[reward.player_id].append(reward)
+
+    def list(self, player_id: str) -> List[Reward]:
+        return self._rewards.get(player_id, [])

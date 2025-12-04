@@ -1,58 +1,56 @@
-"""
-Repository interfaces for the Gamification System.
-"""
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
+
 from ..domain.gamification import Achievement, Badge, Progress, Reward
 
-class IAchievementRepository(ABC):
-    """Interface for an achievement repository."""
-    @abstractmethod
-    def get_all(self) -> List[Achievement]:
-        pass
 
-    @abstractmethod
-    def get_by_id(self, id: str) -> Achievement:
-        pass
-
+class AchievementRepository(ABC):
     @abstractmethod
     def add(self, achievement: Achievement) -> None:
         pass
 
-class IBadgeRepository(ABC):
-    """Interface for a badge repository."""
     @abstractmethod
-    def get_all(self) -> List[Badge]:
+    def get(self, achievement_id: str) -> Optional[Achievement]:
         pass
 
     @abstractmethod
-    def get_by_id(self, id: str) -> Badge:
+    def list(self) -> List[Achievement]:
         pass
 
+    @abstractmethod
+    def update(self, achievement: Achievement) -> None:
+        pass
+
+
+class BadgeRepository(ABC):
     @abstractmethod
     def add(self, badge: Badge) -> None:
         pass
 
-class IProgressRepository(ABC):
-    """Interface for a progress repository."""
     @abstractmethod
-    def get_by_player_id(self, player_id: str) -> Progress:
+    def get(self, badge_id: str) -> Optional[Badge]:
         pass
 
     @abstractmethod
-    def save(self, progress: Progress) -> None:
+    def list(self) -> List[Badge]:
         pass
 
-class IRewardRepository(ABC):
-    """Interface for a reward repository."""
+
+class ProgressRepository(ABC):
     @abstractmethod
-    def get_all(self) -> List[Reward]:
+    def get(self, player_id: str) -> Optional[Progress]:
         pass
 
     @abstractmethod
-    def get_by_id(self, id: str) -> Reward:
+    def update(self, progress: Progress) -> None:
         pass
 
+
+class RewardRepository(ABC):
     @abstractmethod
     def add(self, reward: Reward) -> None:
+        pass
+
+    @abstractmethod
+    def list(self, player_id: str) -> List[Reward]:
         pass
