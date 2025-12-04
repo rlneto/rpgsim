@@ -9,20 +9,33 @@ from .services.gamification_service import (
     InterventionSystem,
     NeuroadaptiveEngagementSystem,
 )
-from .domain.gamification import ContentVarietyType
+from .domain.gamification import ContentVarietyType, Progress
 from .services.progress_service import ProgressService
 from .services.reward_service import RewardService
+from .services.achievement_service import AchievementService
+from .repositories.memory_repository import (
+    MemoryAchievementRepository,
+    MemoryBadgeRepository,
+    MemoryProgressRepository,
+    MemoryRewardRepository,
+)
 
 
 class GamificationSystem:
-    def __init__(self):
+    def __init__(self, player_id: str = "player1"):
+        self.player_id = player_id
         self.dda = DynamicDifficultyAdjustment()
         self.flow_optimizer = FlowStateOptimizer()
         self.reward_system = RewardService()
         self.engagement_system = NeuroadaptiveEngagementSystem()
+        self.progress_repository = MemoryProgressRepository()
         self.progress_visualization = ProgressService()
         self.content_variety = ContentVarietyOptimizer()
         self.intervention_system = InterventionSystem()
+        self.achievement_repository = MemoryAchievementRepository()
+        self.achievement_service = AchievementService(self.achievement_repository)
+        self.badge_repository = MemoryBadgeRepository()
+        self.reward_repository = MemoryRewardRepository()
         self.player_state = {
             "session_start_time": time.time(),
             "current_session_duration": 0,
@@ -35,6 +48,11 @@ class GamificationSystem:
             "motivation_level": 0.7,
             "engagement_history": deque(maxlen=100),
         }
+
+        progress = self.progress_repository.get(self.player_id)
+        if not progress:
+            progress = Progress(player_id=self.player_id, level=1, experience=0)
+            self.progress_repository.update(progress)
 
     def initialize_system(self) -> Dict[str, Any]:
         return {
@@ -66,6 +84,9 @@ class GamificationSystem:
         self.player_state["current_session_duration"] = (
             time.time() - self.player_state["session_start_time"]
         )
+        
+        progress = self.progress_repository.get(self.player_id)
+        
         if difficulty is None:
             difficulty = self.dda.current_difficulty
         self.engagement_system.track_behavior(
@@ -157,21 +178,25 @@ class GamificationSystem:
         }
 
     def get_player_analytics(self) -> Dict[str, Any]:
+        progress = self.progress_repository.get(self.player_id)
         engagement_metrics = self.engagement_system.calculate_engagement_metrics()
         churn_risk = self.engagement_system.predict_churn_risk()
         content_analysis = self.content_variety.get_content_variety_analysis()
         reward_analysis = self.reward_system.analyze_player_response()
-        current_level = self.player_state["current_level"]
+        
+        current_level = progress.level if progress else self.player_state["current_level"]
+        total_exp = progress.experience if progress else self.player_state["total_experience"]
+        
         level_exp = self.progress_visualization.calculate_experience_requirement(
             current_level
         )
         level_progress = self.progress_visualization.calculate_level_progress(
-            self.player_state["total_experience"], level_exp
+            total_exp, level_exp
         )
         return {
             "player_state": {
                 "current_level": current_level,
-                "total_experience": self.player_state["total_experience"],
+                "total_experience": total_exp,
                 "skill_level": self.player_state["skill_level"],
                 "motivation_level": self.player_state["motivation_level"],
                 "session_duration": self.player_state["current_session_duration"],
@@ -227,25 +252,59 @@ class GamificationSystem:
         self.dda.current_difficulty = target_difficulty
 
     def add_experience(self, exp_amount: int) -> Dict[str, Any]:
-        old_level = self.player_state["current_level"]
-        self.player_state["total_experience"] += exp_amount
+        progress = self.progress_repository.get(self.player_id)
+        old_level = progress.level if progress else self.player_state["current_level"]
+        
+        if progress:
+            progress.experience += exp_amount
+            old_exp = progress.experience
+        else:
+            self.player_state["total_experience"] += exp_amount
+            old_exp = self.player_state["total_experience"]
+        
         required_exp = self.progress_visualization.calculate_experience_requirement(
             old_level
         )
         level_ups = 0
-        while self.player_state["total_experience"] >= required_exp:
-            self.player_state["total_experience"] -= required_exp
-            level_ups += 1
-            self.player_state["current_level"] += 1
-            required_exp = self.progress_visualization.calculate_experience_requirement(
-                self.player_state["current_level"]
-            )
+        
+        if progress:
+            while progress.experience >= required_exp:
+                progress.experience -= required_exp
+                level_ups += 1
+                progress.level += 1
+                required_exp = self.progress_visualization.calculate_experience_requirement(
+                    progress.level
+                )
+            self.progress_repository.update(progress)
+            return {
+                "experience_added": exp_amount,
+                "old_level": old_level,
+                "new_level": progress.level,
+                "levels_gained": level_ups,
+                "total_experience": progress.experience,
+            }
+        else:
+            while self.player_state["total_experience"] >= required_exp:
+                self.player_state["total_experience"] -= required_exp
+                level_ups += 1
+                self.player_state["current_level"] += 1
+                required_exp = self.progress_visualization.calculate_experience_requirement(
+                    self.player_state["current_level"]
+                )
+            return {
+                "experience_added": exp_amount,
+                "old_level": old_level,
+                "new_level": self.player_state["current_level"],
+                "levels_gained": level_ups,
+                "total_experience": self.player_state["total_experience"],
+            }
+        
         return {
             "experience_added": exp_amount,
             "old_level": old_level,
-            "new_level": self.player_state["current_level"],
+            "new_level": old_level,
             "levels_gained": level_ups,
-            "total_experience": self.player_state["total_experience"],
+            "total_experience": old_exp,
             "next_level_requirement": required_exp,
         }
 
@@ -276,12 +335,12 @@ class GamificationSystem:
 _gamification_system = None
 
 
-def get_gamification_system() -> GamificationSystem:
+def get_gamification_system(player_id: str = "player1") -> GamificationSystem:
     global _gamification_system
     if _gamification_system is None:
-        _gamification_system = GamificationSystem()
+        _gamification_system = GamificationSystem(player_id)
     return _gamification_system
 
 
-def create_gamification_system() -> GamificationSystem:
-    return GamificationSystem()
+def create_gamification_system(player_id: str = "player1") -> GamificationSystem:
+    return GamificationSystem(player_id)

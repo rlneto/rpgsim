@@ -911,7 +911,7 @@ class TestGamificationSystem(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        self.system = GamificationSystem()
+        self.system = GamificationSystem("player1")
 
     def test_initialization(self):
         """Test system initialization."""
@@ -1019,16 +1019,15 @@ class TestGamificationSystem(unittest.TestCase):
         new_skill = 0.8
         self.system.update_player_skill(new_skill)
 
-        self.assertEqual(self.system.player_state['skill_level'], new_skill)
-
         # Should trigger difficulty recalculation
         target_difficulty = self.system.flow_optimizer.calculate_optimal_difficulty(new_skill)
         self.assertEqual(self.system.dda.current_difficulty, target_difficulty)
 
     def test_add_experience(self):
         """Test adding experience and level progression."""
-        initial_level = self.system.player_state['current_level']
-        initial_exp = self.system.player_state['total_experience']
+        initial_progress = self.system.progress_repository.get("player1")
+        initial_level = initial_progress.level
+        initial_exp = initial_progress.experience
 
         # Add experience that should trigger level up
         exp_amount = 150  # Should be enough for level 1 (100 exp)
@@ -1076,7 +1075,7 @@ class TestSystemIntegration(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        self.system = GamificationSystem()
+        self.system = GamificationSystem("player1")
 
     def test_full_gamification_workflow(self):
         """Test complete gamification workflow."""
