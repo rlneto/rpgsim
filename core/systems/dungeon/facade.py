@@ -1,27 +1,38 @@
 """
 Dungeon System Facade
 """
+import random
+import uuid
 from typing import List, Dict, Any, Optional
-from .services.dungeon_manager import DungeonManager
-from .services.dungeon_service import DungeonGenerator
+from .services.dungeon_generation_service import DungeonGenerationService
+from .services.dungeon_exploration_service import DungeonExplorationService
 from .services.reward_system import RewardSystem
 from .domain.dungeon import DungeonTheme, StrategicDecisionType
+from .repositories.memory_repository import MemoryDungeonRepository
 
 
 class DungeonSystem:
     """Facade for the Dungeon System"""
 
     def __init__(self):
-        self.manager = DungeonManager()
-        self.generator = self.manager.generator
+        self.repository = MemoryDungeonRepository()
+        self.generation_service = DungeonGenerationService()
+        self.exploration_service = DungeonExplorationService(self.repository)
         self.reward_system = RewardSystem()
 
     def initialize_dungeons(self, count: int = 50) -> None:
         """Initialize the world dungeons"""
-        self.manager.generate_all_dungeons(count)
+        themes = random.sample(list(DungeonTheme), count)
+        for i in range(count):
+            theme = themes[i]
+            player_level = random.randint(1, 10)
+            dungeon_id = str(uuid.uuid4())
+            dungeon = self.generation_service.generate_dungeon(dungeon_id, theme, player_level)
+            self.repository.save(dungeon)
 
     def get_dungeon_list(self) -> List[Dict[str, Any]]:
         """Get list of all dungeons"""
+        dungeons = self.repository.get_all()
         return [
             {
                 'id': d.id,
@@ -29,16 +40,16 @@ class DungeonSystem:
                 'theme': d.theme.value,
                 'level': d.level
             }
-            for d in self.manager.dungeons.values()
+            for d in dungeons
         ]
 
     def enter_dungeon(self, dungeon_id: str, player_level: int) -> Dict[str, Any]:
         """Enter a dungeon"""
-        dungeon = self.manager.get_dungeon(dungeon_id)
+        dungeon = self.repository.get_by_id(dungeon_id)
         if not dungeon:
             return {'error': 'Dungeon not found'}
 
-        session = self.manager.start_exploration(dungeon_id, player_level)
+        session = self.exploration_service.start_exploration(dungeon_id, player_level)
 
         return {
             'dungeon_id': dungeon.id,
@@ -50,7 +61,7 @@ class DungeonSystem:
 
     def explore_dungeon(self, dungeon_id: str, actions: List[str]) -> Dict[str, Any]:
         """Perform exploration actions"""
-        session = self.manager.get_session(dungeon_id)
+        session = self.exploration_service.get_session(dungeon_id)
         if not session:
             return {'error': 'Active session not found'}
 
@@ -74,10 +85,10 @@ class DungeonSystem:
                             break
 
                 if room:
-                    session.explore_room(room)
+                    self.exploration_service.explore_room(dungeon_id, room.id)
 
             elif action == 'make_strategic_choice':
-                session.make_strategic_decision(StrategicDecisionType.PATH_CHOICE)
+                self.exploration_service.make_strategic_decision(dungeon_id, StrategicDecisionType.PATH_CHOICE)
             elif action == 'face_challenge':
                 # Simulate challenge success
                 pass
@@ -90,7 +101,7 @@ class DungeonSystem:
 
     def navigate_dungeon(self, dungeon_id: str, depth: int = 0) -> Dict[str, Any]:
         """Navigate deeper into dungeon"""
-        session = self.manager.get_session(dungeon_id)
+        session = self.exploration_service.get_session(dungeon_id)
         if not session:
             return {'error': 'Active session not found'}
 
@@ -125,7 +136,7 @@ class DungeonSystem:
 
     def end_dungeon_exploration(self, dungeon_id: str) -> Dict[str, Any]:
         """End exploration"""
-        return self.manager.end_exploration(dungeon_id)
+        return self.exploration_service.end_exploration(dungeon_id)
 
 
 # Global instances for testing compatibility

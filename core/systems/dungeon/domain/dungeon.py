@@ -139,20 +139,49 @@ class LoreType(Enum):
     ARTIFACTS = "artifacts"
 
 
+class TrapType(Enum):
+    """Types of traps"""
+    PITFALL = "pitfall"
+    ARROW = "arrow"
+    POISON_DART = "poison_dart"
+    FIRE = "fire"
+    ICE = "ice"
+
+
 @dataclass
-class DungeonRoom:
+class Trap:
+    """A trap in a dungeon"""
+    id: str
+    trap_type: TrapType
+    difficulty: int
+    is_disarmed: bool = False
+
+
+@dataclass
+class Treasure:
+    """A treasure in a dungeon"""
+    id: str
+    name: str
+    rarity: RewardTier
+    value: int
+
+
+@dataclass
+class Room:
     """A room within a dungeon"""
     id: str
     type: RoomType
     x: int
     y: int
     connections: List[str] = field(default_factory=list)
-    contents: List[str] = field(default_factory=list)
+    contents: List[Any] = field(default_factory=list)
     secrets: List[str] = field(default_factory=list)
     challenge: Optional[EnvironmentalChallenge] = None
     puzzle: Optional[PuzzleType] = None
     lore: Optional[LoreType] = None
     explored: bool = False
+    traps: List[Trap] = field(default_factory=list)
+    treasures: List[Treasure] = field(default_factory=list)
 
     def add_connection(self, room_id: str) -> None:
         """Add a connection to another room"""
@@ -172,7 +201,9 @@ class DungeonRoom:
             'secrets': self.secrets,
             'challenge': self.challenge.value if self.challenge else None,
             'puzzle': self.puzzle.value if self.puzzle else None,
-            'lore': self.lore.value if self.lore else None
+            'lore': self.lore.value if self.lore else None,
+            'traps': [t.id for t in self.traps],
+            'treasures': [t.id for t in self.treasures],
         }
 
 
@@ -183,7 +214,7 @@ class Dungeon:
     name: str
     theme: DungeonTheme
     level: int
-    rooms: Dict[str, DungeonRoom]
+    rooms: Dict[str, Room]
     layout: LayoutType
     puzzles: List[PuzzleType]
     environmental_challenges: List[EnvironmentalChallenge]
@@ -191,18 +222,18 @@ class Dungeon:
     hidden_areas: int
     lore_elements: int
 
-    def get_room(self, room_id: str) -> Optional[DungeonRoom]:
+    def get_room(self, room_id: str) -> Optional[Room]:
         """Get a room by ID"""
         return self.rooms.get(room_id)
 
-    def get_entrance(self) -> Optional[DungeonRoom]:
+    def get_entrance(self) -> Optional[Room]:
         """Get the entrance room"""
         for room in self.rooms.values():
             if room.type == RoomType.ENTRANCE:
                 return room
         return None
 
-    def get_boss_room(self) -> Optional[DungeonRoom]:
+    def get_boss_room(self) -> Optional[Room]:
         """Get the boss room"""
         for room in self.rooms.values():
             if room.type == RoomType.BOSS_ROOM:
@@ -235,7 +266,7 @@ class ExplorationSession:
         if entrance:
             self.current_room_id = entrance.id
 
-    def explore_room(self, room: DungeonRoom) -> Dict[str, Any]:
+    def explore_room(self, room: Room) -> Dict[str, Any]:
         """Process room exploration"""
         result = room.explore()
         if result:

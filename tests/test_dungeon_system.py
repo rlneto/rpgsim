@@ -6,20 +6,22 @@ secrets, progression, rewards, and strategic decision-making.
 """
 
 import unittest
-import random
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock
 import sys
 import os
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from core.systems.dungeon import (
+from core.systems.dungeon.domain.dungeon import (
     DungeonTheme, LayoutType, PuzzleType, EnvironmentalChallenge, RewardTier,
-    RoomType, StrategicDecisionType, LoreType, DungeonRoom, Dungeon, ExplorationSession,
-    DungeonGenerator, DungeonManager, RewardSystem, DungeonSystem,
-    get_dungeon_system, create_dungeon_system
+    RoomType, StrategicDecisionType, LoreType, Room, Dungeon, ExplorationSession
 )
+from core.systems.dungeon.services.dungeon_generation_service import DungeonGenerationService
+from core.systems.dungeon.services.dungeon_exploration_service import DungeonExplorationService
+from core.systems.dungeon.services.reward_system import RewardSystem
+from core.systems.dungeon.facade import DungeonSystem, get_dungeon_system, create_dungeon_system
+from core.systems.dungeon.repositories.memory_repository import MemoryDungeonRepository
 
 
 class TestDungeonEnums(unittest.TestCase):
@@ -62,12 +64,12 @@ class TestDungeonEnums(unittest.TestCase):
         self.assertEqual(sorted(actual_tiers), sorted(expected_tiers))
 
 
-class TestDungeonRoom(unittest.TestCase):
-    """Test DungeonRoom functionality."""
+class TestRoom(unittest.TestCase):
+    """Test Room functionality."""
 
     def setUp(self):
         """Set up test fixtures."""
-        self.room = DungeonRoom(
+        self.room = Room(
             id="test_room",
             type=RoomType.CHAMBER,
             x=5, y=10,
@@ -121,9 +123,9 @@ class TestDungeon(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         rooms = {
-            "entrance": DungeonRoom("entrance", RoomType.ENTRANCE, 0, 0),
-            "chamber1": DungeonRoom("chamber1", RoomType.CHAMBER, 1, 0),
-            "boss": DungeonRoom("boss", RoomType.BOSS_ROOM, 2, 0)
+            "entrance": Room("entrance", RoomType.ENTRANCE, 0, 0),
+            "chamber1": Room("chamber1", RoomType.CHAMBER, 1, 0),
+            "boss": Room("boss", RoomType.BOSS_ROOM, 2, 0)
         }
 
         self.dungeon = Dungeon(
@@ -188,8 +190,8 @@ class TestExplorationSession(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         rooms = {
-            "entrance": DungeonRoom("entrance", RoomType.ENTRANCE, 0, 0),
-            "chamber1": DungeonRoom("chamber1", RoomType.CHAMBER, 1, 0,
+            "entrance": Room("entrance", RoomType.ENTRANCE, 0, 0),
+            "chamber1": Room("chamber1", RoomType.CHAMBER, 1, 0,
                                    puzzle=PuzzleType.MECHANICAL,
                                    secrets=["secret1"]),
         }
@@ -247,12 +249,12 @@ class TestExplorationSession(unittest.TestCase):
         self.assertGreater(depth_multiplier, 1.0)
 
 
-class TestDungeonGenerator(unittest.TestCase):
-    """Test DungeonGenerator functionality."""
+class TestDungeonGenerationService(unittest.TestCase):
+    """Test DungeonGenerationService functionality."""
 
     def setUp(self):
         """Set up test fixtures."""
-        self.generator = DungeonGenerator()
+        self.generator = DungeonGenerationService()
 
     def test_generator_initialization(self):
         """Test generator initialization."""
@@ -279,7 +281,7 @@ class TestDungeonGenerator(unittest.TestCase):
         """Test theme-appropriate puzzle generation."""
         puzzles = self.generator._generate_theme_puzzles(DungeonTheme.ANCIENT_TEMPLE)
         self.assertGreaterEqual(len(puzzles), 2)
-        self.assertLessEqual(len(puzzles), 8)
+        self.assertLessEqual(len(puzzles), 4)
 
         # Should include theme-appropriate puzzles
         puzzle_values = [p.value for p in puzzles]
@@ -289,7 +291,7 @@ class TestDungeonGenerator(unittest.TestCase):
         """Test theme-appropriate challenge generation."""
         challenges = self.generator._generate_theme_challenges(DungeonTheme.VOLCANIC_FORTRESS)
         self.assertGreaterEqual(len(challenges), 1)
-        self.assertLessEqual(len(challenges), 4)
+        self.assertLessEqual(len(challenges), 3)
 
         # Should generate valid challenges
         challenge_values = [c.value for c in challenges]
@@ -315,9 +317,9 @@ class TestDungeonGenerator(unittest.TestCase):
     def test_connect_rooms_linear(self):
         """Test linear room connections."""
         rooms = {
-            "entrance": DungeonRoom("entrance", RoomType.ENTRANCE, 0, 0),
-            "room1": DungeonRoom("room1", RoomType.CHAMBER, 1, 0),
-            "room2": DungeonRoom("room2", RoomType.CHAMBER, 2, 0),
+            "entrance": Room("entrance", RoomType.ENTRANCE, 0, 0),
+            "room1": Room("room1", RoomType.CHAMBER, 1, 0),
+            "room2": Room("room2", RoomType.CHAMBER, 2, 0),
         }
 
         self.generator._connect_rooms(rooms, LayoutType.LINEAR)
@@ -331,9 +333,9 @@ class TestDungeonGenerator(unittest.TestCase):
     def test_connect_rooms_circular(self):
         """Test circular room connections."""
         rooms = {
-            "room1": DungeonRoom("room1", RoomType.CHAMBER, 0, 0),
-            "room2": DungeonRoom("room2", RoomType.CHAMBER, 1, 0),
-            "room3": DungeonRoom("room3", RoomType.CHAMBER, 2, 0),
+            "room1": Room("room1", RoomType.CHAMBER, 0, 0),
+            "room2": Room("room2", RoomType.CHAMBER, 1, 0),
+            "room3": Room("room3", RoomType.CHAMBER, 2, 0),
         }
 
         self.generator._connect_rooms(rooms, LayoutType.CIRCULAR)
@@ -341,80 +343,6 @@ class TestDungeonGenerator(unittest.TestCase):
         # Check circular connections
         for room_id, room in rooms.items():
             self.assertGreaterEqual(len(room.connections), 2)
-
-
-class TestDungeonManager(unittest.TestCase):
-    """Test DungeonManager functionality."""
-
-    def setUp(self):
-        """Set up test fixtures."""
-        self.manager = DungeonManager()
-
-    def test_manager_initialization(self):
-        """Test manager initialization."""
-        self.assertEqual(len(self.manager.dungeons), 0)
-        self.assertEqual(len(self.manager.active_sessions), 0)
-        self.assertEqual(len(self.manager.themes_used), 0)
-
-    def test_generate_all_dungeons(self):
-        """Test generating all dungeons."""
-        self.manager.generate_all_dungeons(10)
-        self.assertEqual(len(self.manager.dungeons), 10)
-        self.assertEqual(len(self.manager.themes_used), 10)
-
-    def test_generate_full_50_dungeons(self):
-        """Test generating complete set of 50 dungeons."""
-        self.manager.generate_all_dungeons(50)
-        self.assertEqual(len(self.manager.dungeons), 50)
-        self.assertEqual(len(self.manager.themes_used), 50)
-
-    def test_get_dungeon(self):
-        """Test getting dungeon by ID."""
-        self.manager.generate_all_dungeons(5)
-        dungeon = self.manager.get_dungeon("dungeon_0")
-        self.assertIsNotNone(dungeon)
-        self.assertEqual(dungeon.id, "dungeon_0")
-
-    def test_start_exploration(self):
-        """Test starting dungeon exploration."""
-        self.manager.generate_all_dungeons(1)
-        session = self.manager.start_exploration("dungeon_0", 10)
-
-        self.assertIsNotNone(session)
-        self.assertEqual(session.player_level, 10)
-        self.assertEqual(session.dungeon.id, "dungeon_0")
-
-    def test_get_session(self):
-        """Test getting active session."""
-        self.manager.generate_all_dungeons(1)
-        self.manager.start_exploration("dungeon_0", 10)
-        session = self.manager.get_session("dungeon_0")
-        self.assertIsNotNone(session)
-
-    def test_end_exploration(self):
-        """Test ending dungeon exploration."""
-        self.manager.generate_all_dungeons(1)
-        self.manager.start_exploration("dungeon_0", 10)
-        results = self.manager.end_exploration("dungeon_0")
-
-        self.assertIn('dungeon_id', results)
-        self.assertEqual(results['dungeon_id'], "dungeon_0")
-        self.assertNotIn('dungeon_0', self.manager.active_sessions)
-
-    def test_get_all_themes(self):
-        """Test getting all themes."""
-        self.manager.generate_all_dungeons(5)
-        themes = self.manager.get_all_themes()
-        self.assertEqual(len(themes), 5)
-
-    def test_get_dungeons_by_theme(self):
-        """Test filtering dungeons by theme."""
-        self.manager.generate_all_dungeons(10)
-        ancient_temple_dungeons = self.manager.get_dungeons_by_theme(DungeonTheme.ANCIENT_TEMPLE)
-        self.assertGreater(len(ancient_temple_dungeons), 0)
-
-        for dungeon in ancient_temple_dungeons:
-            self.assertEqual(dungeon.theme, DungeonTheme.ANCIENT_TEMPLE)
 
 
 class TestRewardSystem(unittest.TestCase):
@@ -466,14 +394,15 @@ class TestDungeonSystem(unittest.TestCase):
 
     def test_system_initialization(self):
         """Test system initialization."""
-        self.assertIsNotNone(self.system.manager)
+        self.assertIsNotNone(self.system.repository)
+        self.assertIsNotNone(self.system.generation_service)
+        self.assertIsNotNone(self.system.exploration_service)
         self.assertIsNotNone(self.system.reward_system)
-        self.assertIsNotNone(self.system.generator)
 
     def test_initialize_dungeons(self):
         """Test dungeon initialization."""
         self.system.initialize_dungeons()
-        self.assertEqual(len(self.system.manager.dungeons), 50)
+        self.assertEqual(len(self.system.repository.get_all()), 50)
 
     def test_get_dungeon_list(self):
         """Test getting dungeon list."""
@@ -489,10 +418,12 @@ class TestDungeonSystem(unittest.TestCase):
     def test_enter_dungeon(self):
         """Test entering a dungeon."""
         self.system.initialize_dungeons()
-        result = self.system.enter_dungeon("dungeon_0", 15)
+        dungeons = self.system.repository.get_all()
+        dungeon_id = dungeons[0].id
+        result = self.system.enter_dungeon(dungeon_id, 15)
 
         self.assertIn('dungeon_id', result)
-        self.assertEqual(result['dungeon_id'], "dungeon_0")
+        self.assertEqual(result['dungeon_id'], dungeon_id)
         self.assertIn('theme', result)
         self.assertIn('puzzles', result)
         self.assertIn('environmental_challenges', result)
@@ -505,10 +436,12 @@ class TestDungeonSystem(unittest.TestCase):
     def test_explore_dungeon(self):
         """Test dungeon exploration."""
         self.system.initialize_dungeons()
-        self.system.enter_dungeon("dungeon_0", 10)
+        dungeons = self.system.repository.get_all()
+        dungeon_id = dungeons[0].id
+        self.system.enter_dungeon(dungeon_id, 10)
 
         actions = ['explore_room', 'make_strategic_choice', 'face_challenge']
-        result = self.system.explore_dungeon("dungeon_0", actions)
+        result = self.system.explore_dungeon(dungeon_id, actions)
 
         self.assertIn('rooms_explored', result)
         self.assertIn('strategic_decisions', result)
@@ -517,9 +450,11 @@ class TestDungeonSystem(unittest.TestCase):
     def test_navigate_dungeon(self):
         """Test dungeon navigation."""
         self.system.initialize_dungeons()
-        self.system.enter_dungeon("dungeon_0", 10)
+        dungeons = self.system.repository.get_all()
+        dungeon_id = dungeons[0].id
+        self.system.enter_dungeon(dungeon_id, 10)
 
-        result = self.system.navigate_dungeon("dungeon_0", depth=15)
+        result = self.system.navigate_dungeon(dungeon_id, depth=15)
 
         self.assertIn('depth_reached', result)
         self.assertIn('difficulty_curve', result)
@@ -545,10 +480,11 @@ class TestDungeonSystem(unittest.TestCase):
     def test_end_dungeon_exploration(self):
         """Test ending dungeon exploration."""
         self.system.initialize_dungeons()
-        self.system.enter_dungeon("dungeon_0", 10)
+        dungeons = self.system.repository.get_all()
+        dungeon_id = dungeons[0].id
+        self.system.enter_dungeon(dungeon_id, 10)
 
-        result = self.system.end_dungeon_exploration("dungeon_0")
-
+        result = self.system.end_dungeon_exploration(dungeon_id)
         self.assertIn('dungeon_id', result)
         self.assertIn('rooms_explored', result)
         self.assertIn('exploration_percentage', result)
@@ -565,24 +501,26 @@ class TestSystemIntegration(unittest.TestCase):
         """Test complete dungeon exploration workflow."""
         # Initialize dungeons
         self.system.initialize_dungeons()
+        dungeons = self.system.repository.get_all()
+        dungeon_id = dungeons[0].id
 
         # Enter dungeon
-        entry_result = self.system.enter_dungeon("dungeon_0", 20)
+        entry_result = self.system.enter_dungeon(dungeon_id, 20)
         self.assertNotIn('error', entry_result)
 
         # Explore
-        explore_result = self.system.explore_dungeon("dungeon_0", [
+        explore_result = self.system.explore_dungeon(dungeon_id, [
             'explore_room', 'explore_room', 'make_strategic_choice'
         ])
         self.assertGreater(explore_result['rooms_explored'], 0)
 
         # Navigate
-        nav_result = self.system.navigate_dungeon("dungeon_0", depth=20)
+        nav_result = self.system.navigate_dungeon(dungeon_id, depth=20)
         self.assertGreater(nav_result['depth_reached'], 0)
         self.assertGreater(len(nav_result['rewards_found']), 0)
 
         # End exploration
-        end_result = self.system.end_dungeon_exploration("dungeon_0")
+        end_result = self.system.end_dungeon_exploration(dungeon_id)
         self.assertIn('exploration_percentage', end_result)
 
     def test_theme_puzzle_consistency(self):
@@ -591,7 +529,7 @@ class TestSystemIntegration(unittest.TestCase):
 
         # Test ancient temple has appropriate puzzles
         ancient_temple = None
-        for dungeon in self.system.manager.dungeons.values():
+        for dungeon in self.system.repository.get_all():
             if dungeon.theme == DungeonTheme.ANCIENT_TEMPLE:
                 ancient_temple = dungeon
                 break
@@ -632,7 +570,7 @@ class TestSystemIntegration(unittest.TestCase):
     def test_distinct_themes(self):
         """Test that all dungeons have distinct themes."""
         self.system.initialize_dungeons()
-        themes = [d.theme for d in self.system.manager.dungeons.values()]
+        themes = [d.theme for d in self.system.repository.get_all()]
         unique_themes = set(themes)
 
         self.assertEqual(len(themes), 50)
@@ -680,7 +618,7 @@ class TestErrorHandling(unittest.TestCase):
     def test_end_without_session(self):
         """Test ending exploration without active session."""
         result = self.system.end_dungeon_exploration("invalid_id")
-        self.assertEqual(result, {})  # Should return empty dict
+        self.assertEqual(result, {'error': 'Session not found'})
 
     def test_empty_dungeon_list(self):
         """Test getting dungeon list without initialization."""
@@ -690,9 +628,11 @@ class TestErrorHandling(unittest.TestCase):
     def test_zero_exploration_actions(self):
         """Test exploration with no actions."""
         self.system.initialize_dungeons()
-        self.system.enter_dungeon("dungeon_0", 10)
+        dungeons = self.system.repository.get_all()
+        dungeon_id = dungeons[0].id
+        self.system.enter_dungeon(dungeon_id, 10)
 
-        result = self.system.explore_dungeon("dungeon_0", [])
+        result = self.system.explore_dungeon(dungeon_id, [])
         self.assertEqual(result['rooms_explored'], 0)
         self.assertEqual(result['strategic_decisions'], 0)
 

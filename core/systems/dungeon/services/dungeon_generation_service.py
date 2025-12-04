@@ -5,12 +5,12 @@ from typing import Dict, List, Any, Optional
 import random
 import uuid
 from ..domain.dungeon import (
-    Dungeon, DungeonRoom, DungeonTheme, LayoutType, PuzzleType,
+    Dungeon, Room, DungeonTheme, LayoutType, PuzzleType,
     EnvironmentalChallenge, RoomType, LoreType
 )
 
 
-class DungeonGenerator:
+class DungeonGenerationService:
     """Service for procedural dungeon generation"""
 
     def __init__(self):
@@ -80,8 +80,8 @@ class DungeonGenerator:
     def _generate_theme_puzzles(self, theme: DungeonTheme) -> List[PuzzleType]:
         """Generate puzzles based on theme"""
         available = self.theme_puzzle_mapping.get(theme, [PuzzleType.RIDDLE])
-        count = random.randint(2, 4)
-        return random.choices(available, k=count)
+        count = random.randint(2, min(4, len(available)))
+        return random.sample(available, k=count)
 
     def _generate_theme_challenges(self, theme: DungeonTheme) -> List[EnvironmentalChallenge]:
         """Generate challenges based on theme"""
@@ -91,13 +91,13 @@ class DungeonGenerator:
         return list(set(random.choices(available, k=count)))
 
     def _generate_room_layout(self, dungeon_id: str, count: int,
-                             layout: LayoutType, theme: DungeonTheme) -> Dict[str, DungeonRoom]:
+                             layout: LayoutType, theme: DungeonTheme) -> Dict[str, Room]:
         """Generate rooms based on layout"""
         rooms = {}
 
         # Always create entrance
         entrance_id = f"{dungeon_id}_entrance"
-        rooms[entrance_id] = DungeonRoom(
+        rooms[entrance_id] = Room(
             id=entrance_id,
             type=RoomType.ENTRANCE,
             x=0, y=0
@@ -114,7 +114,7 @@ class DungeonGenerator:
             elif random.random() < 0.2:
                 room_type = random.choice([RoomType.PUZZLE_ROOM, RoomType.TREASURE_ROOM, RoomType.TRAP_ROOM])
 
-            rooms[room_id] = DungeonRoom(
+            rooms[room_id] = Room(
                 id=room_id,
                 type=room_type,
                 x=i, y=0,  # Simplified coordinates
@@ -126,7 +126,7 @@ class DungeonGenerator:
 
         return rooms
 
-    def _connect_rooms(self, rooms: Dict[str, DungeonRoom], layout: LayoutType) -> None:
+    def _connect_rooms(self, rooms: Dict[str, Room], layout: LayoutType) -> None:
         """Connect rooms based on layout"""
         room_ids = list(rooms.keys())
 
