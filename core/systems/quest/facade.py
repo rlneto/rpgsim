@@ -1,64 +1,44 @@
-"""
-Quest System Facade
-"""
-from typing import List, Dict, Any, Optional
-from .services.quest_generator import QuestGenerator
-from .services.npc_manager import NPCManager
-from .services.dialogue_manager import DialogueManager
-from .services.quest_manager import QuestManager
-from .domain.quest import Quest, QuestProgress, NPCProfile, QuestType, QuestDifficulty
+from typing import List, Optional
+from core.systems.quest.domain.quest import Quest, QuestReward
+from core.systems.quest.domain.npc import NPCProfile, DialogueOption, DialogueResponse
+from core.systems.quest.repositories.memory_repository import MemoryQuestRepository
+from core.systems.quest.services.creation import QuestCreationService
+from core.systems.quest.services.progress import QuestProgressService
+from core.systems.quest.services.reward import QuestRewardService
+from core.systems.quest.services.generation import QuestGenerationService, QuestType, QuestDifficulty
+from core.systems.quest.services.npc import NPCService
 
 class QuestSystem:
-    """Facade for the Quest System"""
-
     def __init__(self):
-        self.quest_generator = QuestGenerator()
-        self.npc_manager = NPCManager()
-        self.dialogue_manager = DialogueManager()
-        self.quest_manager = QuestManager()
-        self.available_quests: Dict[str, List[Quest]] = {} # Location -> Quests
+        self.quest_repository = MemoryQuestRepository()
+        self.quest_creation_service = QuestCreationService(self.quest_repository)
+        self.quest_progress_service = QuestProgressService(self.quest_repository)
+        self.quest_reward_service = QuestRewardService(self.quest_repository)
+        self.quest_generation_service = QuestGenerationService()
+        self.npc_service = NPCService()
+        self.npcs: Dict[str, NPCProfile] = {}
 
-    def initialize_world(self, locations: List[str], npc_count: int = 20) -> Dict[str, Any]:
-        """Initialize world with quests and NPCs"""
-        # Generate NPCs
-        npcs = self.npc_manager.generate_npcs(npc_count, locations)
+    def generate_quest(self, quest_id: str, quest_type: Optional[QuestType] = None, difficulty: Optional[QuestDifficulty] = None) -> Quest:
+        quest = self.quest_generation_service.generate_quest(quest_id, quest_type, difficulty)
+        self.quest_repository.add(quest)
+        return quest
 
-        # Generate Quests for locations
-        generated_quests = []
-        for location in locations:
-            # Generate 1-3 quests per location
-            for _ in range(2):
-                quest = self.quest_generator.generate_quest(location=location)
-                if location not in self.available_quests:
-                    self.available_quests[location] = []
-                self.available_quests[location].append(quest)
-                generated_quests.append(quest)
+    def generate_npc(self, npc_id: str, location: str) -> NPCProfile:
+        npc = self.npc_service.generate_npc(npc_id, location)
+        self.npcs[npc_id] = npc
+        return npc
 
-        return {
-            "npcs": npcs,
-            "available_quests": generated_quests
-        }
+    def get_dialogue_options(self, npc_id: str) -> List[DialogueOption]:
+        return self.npc_service.get_dialogue_options()
 
-    def get_available_quests_for_location(self, location: str) -> List[Quest]:
-        """Get available quests for a location"""
-        return self.available_quests.get(location, [])
+    def get_npc_response(self, npc_id: str, option: DialogueOption) -> DialogueResponse:
+        npc = self.npcs.get(npc_id)
+        if npc:
+            return self.npc_service.get_npc_response(option, npc)
+        return DialogueResponse(text="NPC not found.")
 
-    def get_npcs_in_location(self, location: str) -> List[NPCProfile]:
-        """Get NPCs in a location"""
-        return self.npc_manager.get_npcs_by_location(location)
+    def complete_step(self, quest_id: str, step_description: str) -> Optional[Quest]:
+        return self.quest_progress_service.complete_step(quest_id, step_description)
 
-    def start_quest_from_npc(self, player_id: str, quest_id: str, npc_id: str) -> Optional[QuestProgress]:
-        """Start a quest given by an NPC"""
-        # Find the quest
-        quest_to_start = None
-        for quests in self.available_quests.values():
-            for q in quests:
-                if q.quest_id == quest_id:
-                    quest_to_start = q
-                    break
-            if quest_to_start:
-                break
-
-        if quest_to_start:
-            return self.quest_manager.start_quest(player_id, quest_to_start)
-        return None
+    def get_quest_reward(self, quest_id: str) -> Optional[QuestReward]:
+        return self.quest_reward_service.grant_reward(quest_id)
