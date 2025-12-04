@@ -1,18 +1,20 @@
-"""
-Equipment system module
-"""
+"""Equipment system module"""
 from .domain.equipment import (
-    EquipmentSlot, ItemEffect, EquipmentStat, EquipmentSlotInfo,
-    EquipmentComparison, LootGenerationResult
-)
-from .services.equipment_service import (
-    ItemGenerator, EquipmentManager, InventoryManager
+    EquipmentSlot,
+    ItemEffect,
+    EquipmentStat,
+    EquipmentSlotInfo,
+    EquipmentComparison,
+    LootGenerationResult,
 )
 from .facade import EquipmentSystem
 
 __all__ = [
-    'EquipmentSlot', 'ItemEffect', 'EquipmentStat', 'EquipmentSlotInfo',
-    'EquipmentComparison', 'LootGenerationResult',
-    'ItemGenerator', 'EquipmentManager', 'InventoryManager',
-    'EquipmentSystem'
+    "EquipmentSlot",
+    "ItemEffect",
+    "EquipmentStat",
+    "EquipmentSlotInfo",
+    "EquipmentComparison",
+    "LootGenerationResult",
+    "EquipmentSystem",
 ]
