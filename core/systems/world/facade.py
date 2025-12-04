@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 else:
     from .domain.world import World
 from .services.world_service import WorldService
-from .services.travel_service import TravelService, TravelRoute
+from .services.travel_service import TravelService, PathedRoute
 from .services.location_service import LocationService
 from .repositories.memory_repository import (
     MemoryWorldRepository,
@@ -122,21 +122,6 @@ class WorldSystem:
         return success
 
     # Travel Management Methods
-    def can_travel(
-        self, from_location_id: str, to_location_id: str, character_data: Dict
-    ) -> bool:
-        """Check if character can travel directly between locations"""
-        return self.travel_service.can_travel(
-            from_location_id, to_location_id, character_data
-        )
-
-    def calculate_travel_time(
-        self, from_location_id: str, to_location_id: str, character_data: Dict
-    ) -> int:
-        """Calculate travel time for direct travel"""
-        return self.travel_service.calculate_travel_time(
-            from_location_id, to_location_id, character_data
-        )
 
     def find_route(
         self, from_location_id: str, to_location_id: str, character_data: Dict
@@ -162,7 +147,7 @@ class WorldSystem:
             return {"success": False, "reason": "No route provided"}
 
         # Reconstruct route (simplified - in production you'd have proper serialization)
-        route = TravelRoute(
+        route = PathedRoute(
             from_location=route_data["from"],
             to_location=route_data["to"],
             steps=route_data.get("steps", []),
@@ -232,13 +217,6 @@ def get_location_details(location_id: str) -> Optional[Dict]:
     return _world_system.get_location_details(location_id)
 
 
-def can_travel(
-    from_location_id: str, to_location_id: str, character_data: Dict
-) -> bool:
-    """Check travel possibility (backward compatibility)"""
-    return _world_system.can_travel(from_location_id, to_location_id, character_data)
-
-
 def find_route(
     from_location_id: str, to_location_id: str, character_data: Dict
 ) -> Optional[Dict]:
@@ -262,7 +240,6 @@ __all__ = [
     "get_world_info",
     "get_starting_location",
     "get_location_details",
-    "can_travel",
     "find_route",
     "advance_time",
     "get_current_time",
