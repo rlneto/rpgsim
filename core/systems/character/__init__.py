@@ -20,6 +20,8 @@ from .domain.character import Character, CharacterClass, CharacterStats
 from .facade import (
     CharacterSystem,
     create_character,
+    heal_character,
+    get_default_stats_for_class,
     level_up_character,
     add_experience,
     get_all_character_classes,

@@ -42,23 +42,20 @@ class RPGSimGraphicalLauncher:
         print("=" * 60)
         
         try:
-            # Import ONLY graphical interface systems
-            from game.ui.screens.modern_terminal_ui import (
-                create_terminal_ui, 
-                run_terminal_ui,
-                RPGSimApp
-            )
-            from core.engine import get_game_engine
+            # Import ONLY graphical interface systems (SPRINT 1.5 - REFACTORED)
+            # Using refactored GUI implementation
+            import gui_refactored
             
-            # Initialize game engine
-            self.game_engine = get_game_engine()
+            # Initialize game engine (placeholder for now)
+            # self.game_engine = get_game_engine()
             
             # Create graphical interface application
-            app = create_terminal_ui()
+            # Using the new functional GUI from Sprint 1
+            app = gui_refactored.RefactoredApp()
             
             # Initialize with game state
             initial_state = self._create_initial_game_state()
-            app.initialize_game_state(initial_state)
+            # TODO: app.initialize_game_state(initial_state)
             
             print("✅ Graphical Interface Initialized Successfully!")
             print("🎮 Starting RPGSim in Interactive GUI Mode...")
@@ -69,7 +66,8 @@ class RPGSimGraphicalLauncher:
             print("")
             
             # Run EXCLUSIVE graphical interface
-            asyncio.run(run_terminal_ui(app))
+            # Using refactored main function
+            asyncio.run(gui_refactored.main())
             
         except ImportError as e:
             print(f"❌ FAILED TO IMPORT GRAPHICAL INTERFACE: {e}")

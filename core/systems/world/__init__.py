@@ -4,7 +4,8 @@ World system module - provides modular world management
 
 from .domain.world import (
     World, Location, TravelConnection, TravelRequirement,
-    LocationType, TravelRequirementType, Coordinates, DEFAULT_WORLD_CONFIG
+    LocationType, TravelRequirementType, Coordinates, DEFAULT_WORLD_CONFIG,
+    GeographyType
 )
 
 from .services.world_service import WorldService
