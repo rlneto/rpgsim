@@ -94,6 +94,9 @@ class Character(BaseModel):
     stats: CharacterStats = Field(..., description="Character statistics")
     hp: int = Field(ge=0, description="Current hit points")
     max_hp: int = Field(ge=0, description="Maximum hit points")
+    mana: int = Field(default=0, ge=0, description="Current mana points")
+    max_mana: int = Field(default=0, ge=0, description="Maximum mana points")
+    spell_book: Optional['SpellBook'] = Field(default=None, description="Character's spell book")
     gold: int = Field(ge=0, description="Gold amount")
     abilities: List[str] = Field(
         default_factory=list, description="Character abilities"
@@ -102,6 +105,8 @@ class Character(BaseModel):
     quests_completed: List[Any] = Field(
         default_factory=list, description="Completed quests"
     )
+    status_effects: Dict[str, Any] = Field(default_factory=dict, description="Active status effects")
+    spell_cooldowns: Dict[str, int] = Field(default_factory=dict, description="Spell cooldowns")
     skills: Dict[str, int] = Field(default_factory=dict, description="Character skills")
 
     @field_validator("name")
@@ -371,6 +376,7 @@ class Enemy(BaseModel):
     description: str = Field(
         default="", max_length=500, description="Enemy description"
     )
+    status_effects: Dict[str, Any] = Field(default_factory=dict, description="Active status effects")
 
     @field_validator("hp")
     @classmethod
