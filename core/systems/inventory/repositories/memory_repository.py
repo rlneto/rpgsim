@@ -3,8 +3,8 @@ Memory repository for inventory
 """
 
 from typing import Dict, Optional
-from .interfaces.repositories import InventoryRepository
-from ..domain.inventory import Inventory
+from core.systems.inventory.interfaces.repositories import InventoryRepository
+from core.systems.inventory.domain.inventory import Inventory
 
 
 class MemoryInventoryRepository(InventoryRepository):

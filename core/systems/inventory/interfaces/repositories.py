@@ -4,7 +4,7 @@ Inventory repository interface
 
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
-from .domain.inventory import Inventory
+from core.systems.inventory.domain.inventory import Inventory
 
 
 class InventoryRepository(ABC):
