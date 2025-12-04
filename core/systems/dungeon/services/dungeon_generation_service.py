@@ -1,13 +1,13 @@
 """
 Dungeon generation services
 """
-from typing import Dict, List, Any, Optional
+from typing import Dict, List
 import random
 import uuid
-from ..domain.dungeon import (
-    Dungeon, Room, DungeonTheme, LayoutType, PuzzleType,
-    EnvironmentalChallenge, RoomType, LoreType
-)
+from ..domain.dungeon import Dungeon, DungeonTheme, LayoutType
+from ..domain.room import Room, RoomType, PuzzleType, EnvironmentalChallenge
+from ..domain.trap import Trap, TrapType
+from .reward_service import RewardService
 
 
 class DungeonGenerationService:
@@ -16,16 +16,17 @@ class DungeonGenerationService:
     def __init__(self):
         self.theme_puzzle_mapping = self._initialize_theme_puzzles()
         self.theme_challenge_mapping = self._initialize_theme_challenges()
+        self.reward_service = RewardService()
 
-    def generate_dungeon(self, dungeon_id: str, theme: DungeonTheme, player_level: int) -> Dungeon:
+    def generate_dungeon(self, theme: DungeonTheme, player_level: int) -> Dungeon:
         """Generate a complete dungeon"""
+        dungeon_id = str(uuid.uuid4())
         layout = self._select_layout(theme)
-        room_count = 5 + (player_level // 2)  # Scale with level
+        room_count = 5 + (player_level // 2)
 
-        rooms = self._generate_room_layout(dungeon_id, room_count, layout, theme)
+        rooms = self._generate_room_layout(dungeon_id, room_count, layout, theme, player_level)
         self._connect_rooms(rooms, layout)
 
-        # Add content
         puzzles = self._generate_theme_puzzles(theme)
         challenges = self._generate_theme_challenges(theme)
 
@@ -45,12 +46,10 @@ class DungeonGenerationService:
 
     def _initialize_theme_puzzles(self) -> Dict[DungeonTheme, List[PuzzleType]]:
         """Map themes to appropriate puzzles"""
-        # Default mapping for all themes
         mapping = {}
         for theme in DungeonTheme:
             mapping[theme] = [PuzzleType.RIDDLE, PuzzleType.MECHANICAL]
 
-        # Specific overrides
         mapping[DungeonTheme.ANCIENT_TEMPLE] = [PuzzleType.RIDDLE, PuzzleType.MAGICAL, PuzzleType.PATTERN]
         mapping[DungeonTheme.CLOCKWORK_TOWER] = [PuzzleType.MECHANICAL, PuzzleType.LOGICAL, PuzzleType.TEMPORAL]
         mapping[DungeonTheme.ARCANE_LIBRARY] = [PuzzleType.MAGICAL, PuzzleType.RIDDLE, PuzzleType.LOGICAL]
@@ -75,85 +74,78 @@ class DungeonGenerationService:
             return LayoutType.MAZE
         elif theme in [DungeonTheme.CLOCKWORK_TOWER, DungeonTheme.WIZARD_TOWER]:
             return LayoutType.SPIRAL
-        return LayoutType.LINEAR  # Default
+        return LayoutType.LINEAR
 
     def _generate_theme_puzzles(self, theme: DungeonTheme) -> List[PuzzleType]:
         """Generate puzzles based on theme"""
         available = self.theme_puzzle_mapping.get(theme, [PuzzleType.RIDDLE])
-        count = random.randint(2, min(4, len(available)))
-        return random.sample(available, k=count)
+        count = random.randint(2, 4)
+        return random.choices(available, k=count)
 
     def _generate_theme_challenges(self, theme: DungeonTheme) -> List[EnvironmentalChallenge]:
         """Generate challenges based on theme"""
         available = self.theme_challenge_mapping.get(theme, [EnvironmentalChallenge.DARKNESS])
         count = random.randint(1, 3)
-        # Ensure unique challenges
         return list(set(random.choices(available, k=count)))
 
     def _generate_room_layout(self, dungeon_id: str, count: int,
-                             layout: LayoutType, theme: DungeonTheme) -> Dict[str, Room]:
+                             layout: LayoutType, theme: DungeonTheme, level: int) -> Dict[str, Room]:
         """Generate rooms based on layout"""
         rooms = {}
-
-        # Always create entrance
         entrance_id = f"{dungeon_id}_entrance"
         rooms[entrance_id] = Room(
             id=entrance_id,
             type=RoomType.ENTRANCE,
             x=0, y=0
         )
-
-        # Create other rooms
         for i in range(1, count):
             room_id = f"{dungeon_id}_room_{i}"
             room_type = RoomType.CHAMBER
-
-            # Chance for special rooms
             if i == count - 1:
                 room_type = RoomType.BOSS_ROOM
             elif random.random() < 0.2:
                 room_type = random.choice([RoomType.PUZZLE_ROOM, RoomType.TREASURE_ROOM, RoomType.TRAP_ROOM])
 
+            traps = []
+            if room_type == RoomType.TRAP_ROOM or random.random() < 0.1:
+                traps.append(self._generate_trap())
+
+            treasures = []
+            if room_type == RoomType.TREASURE_ROOM:
+                treasures.append(self.reward_service.generate_treasure(level))
+
             rooms[room_id] = Room(
                 id=room_id,
                 type=room_type,
-                x=i, y=0,  # Simplified coordinates
+                x=i, y=0,
                 contents=self._generate_room_contents(theme, room_type),
                 secrets=["Hidden cache"] if random.random() < 0.3 else [],
+                traps=traps,
+                treasures=treasures,
                 challenge=self._get_room_challenge(theme) if random.random() < 0.2 else None,
                 puzzle=self._get_room_puzzle(theme) if room_type == RoomType.PUZZLE_ROOM else None
             )
-
         return rooms
 
     def _connect_rooms(self, rooms: Dict[str, Room], layout: LayoutType) -> None:
         """Connect rooms based on layout"""
         room_ids = list(rooms.keys())
-
         if layout == LayoutType.LINEAR:
             for i in range(len(room_ids) - 1):
-                current_id = room_ids[i]
-                next_id = room_ids[i+1]
+                current_id, next_id = room_ids[i], room_ids[i+1]
                 rooms[current_id].add_connection(next_id)
                 rooms[next_id].add_connection(current_id)
-
         elif layout == LayoutType.CIRCULAR:
-            # Connect linearly first
             for i in range(len(room_ids) - 1):
-                current_id = room_ids[i]
-                next_id = room_ids[i+1]
+                current_id, next_id = room_ids[i], room_ids[i+1]
                 rooms[current_id].add_connection(next_id)
                 rooms[next_id].add_connection(current_id)
-            # Close the loop
             if len(room_ids) > 2:
                 rooms[room_ids[-1]].add_connection(room_ids[0])
                 rooms[room_ids[0]].add_connection(room_ids[-1])
-
-        # Fallback for other layouts to linear for now
         else:
             for i in range(len(room_ids) - 1):
-                current_id = room_ids[i]
-                next_id = room_ids[i+1]
+                current_id, next_id = room_ids[i], room_ids[i+1]
                 rooms[current_id].add_connection(next_id)
                 rooms[next_id].add_connection(current_id)
 
@@ -169,6 +161,15 @@ class DungeonGenerationService:
             if random.random() < 0.5:
                 contents.append("Crate")
         return contents
+
+    def _generate_trap(self) -> Trap:
+        """Generate a trap"""
+        trap_type = random.choice(list(TrapType))
+        return Trap(
+            id=str(uuid.uuid4()),
+            type=trap_type,
+            description=f"A {trap_type.value} trap."
+        )
 
     def _get_room_challenge(self, theme: DungeonTheme) -> EnvironmentalChallenge:
         """Get challenge for a room"""
