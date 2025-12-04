@@ -337,10 +337,8 @@ class ItemPricingService:
             adjusted_market_value * shop.economy.price_modifier * reputation_modifier
         )
 
-        # Apply shop gold reserve limitation
-        max_offer = min(final_offer, shop.economy.gold_reserves)
-
-        return max_offer
+        # Return final offer
+        return final_offer
 
     def calculate_dynamic_price(self, shop: Shop, item: ShopItem,
                                 supply_factor: float = 1.0, demand_factor: float = 1.0,
