@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 from enum import Enum
 
-from ...models import Item
+from core.models import Item
 
 
 class InventorySlotType(str, Enum):
