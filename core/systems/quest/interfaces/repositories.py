@@ -1,13 +1,10 @@
-"""
-Quest repository interfaces
-"""
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from ..domain.quest import Quest, QuestProgress
+from core.systems.quest.domain.quest import Quest
 
 class QuestRepository(ABC):
     @abstractmethod
-    def save(self, quest: Quest) -> bool:
+    def add(self, quest: Quest) -> None:
         pass
 
     @abstractmethod
@@ -15,18 +12,5 @@ class QuestRepository(ABC):
         pass
 
     @abstractmethod
-    def list_all(self) -> List[Quest]:
-        pass
-
-class QuestProgressRepository(ABC):
-    @abstractmethod
-    def save(self, progress: QuestProgress) -> bool:
-        pass
-
-    @abstractmethod
-    def get(self, player_id: str, quest_id: str) -> Optional[QuestProgress]:
-        pass
-
-    @abstractmethod
-    def list_by_player(self, player_id: str) -> List[QuestProgress]:
+    def get_all(self) -> List[Quest]:
         pass

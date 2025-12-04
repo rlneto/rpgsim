@@ -6,6 +6,20 @@ from typing import Dict, List, Optional, Set
 from enum import Enum
 
 
+class GeographyType(Enum):
+    """Types of geography for BDD testing"""
+    FOREST = "forest"
+    MOUNTAIN = "mountain"
+    DESERT = "desert"
+    RIVER = "river"
+    OCEAN = "ocean"
+    PLAINS = "plains"
+    SWAMP = "swamp"
+    TUNDRA = "tundra"
+    VOLCANIC = "volcanic"
+    ICE = "ice"
+
+
 class LocationType(Enum):
     """Types of locations in the game world"""
     CITY = "city"

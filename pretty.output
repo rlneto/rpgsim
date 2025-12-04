@@ -1,0 +1,45 @@
+Feature: Shop System # features/shop_system.feature:1
+
+  Scenario: Shop inventory management              # features/shop_system.feature:3
+    Given player enters any shop                   # features/steps/shop_system_steps.py:6
+    When they browse available items               # features/steps/shop_system_steps.py:44
+    Then shop should have 15-30 items in stock     # features/steps/shop_system_steps.py:139
+    And inventory should refresh periodically      # features/steps/shop_system_steps.py:148
+    And rare items should appear occasionally      # features/steps/shop_system_steps.py:180
+    And shop type should determine inventory focus # features/steps/shop_system_steps.py:201
+
+  Scenario: Dynamic pricing system               # features/shop_system.feature:11
+    Given player wants to buy items              # features/steps/shop_system_steps.py:229
+    When they check prices across cities         # features/steps/shop_system_steps.py:243
+    Then prices should vary by location          # features/steps/shop_system_steps.py:282
+    And supply should affect pricing             # features/steps/shop_system_steps.py:302
+    And player reputation should influence costs # features/steps/shop_system_steps.py:314
+    And bulk purchases should offer discounts    # features/steps/shop_system_steps.py:338
+
+  Scenario: Shop economy simulation               # features/shop_system.feature:19
+    Given shop operates in game world             # features/steps/shop_system_steps.py:372
+    When player interacts with shop over time     # features/steps/shop_system_steps.py:386
+    Then shop should have limited gold reserves   # features/steps/shop_system_steps.py:476
+    And buying should deplete shop inventory      # features/steps/shop_system_steps.py:503
+    And selling should increase shop inventory    # features/steps/shop_system_steps.py:529
+    And shop should restock based on trade routes # features/steps/shop_system_steps.py:559
+
+  Scenario: Shop types and specializations          # features/shop_system.feature:27
+    Given player explores different cities          # features/steps/shop_system_steps.py:604
+    When they visit various shops                   # features/steps/shop_system_steps.py:634
+    Then they should find weapon specialists        # features/steps/shop_system_steps.py:675
+    And they should find armor merchants            # features/steps/shop_system_steps.py:688
+    And they should find magic item dealers         # features/steps/shop_system_steps.py:699
+    And they should find general traders            # features/steps/shop_system_steps.py:710
+      ASSERT FAILED: General shop should have practical items
+
+    And each shop type should have unique inventory # None
+
+  Scenario: Trading and bartering system       # features/shop_system.feature:36
+    Given player wants to sell items           # features/steps/shop_system_steps.py:748
+    When they interact with shopkeeper         # features/steps/shop_system_steps.py:778
+    Then they should receive fair market value # features/steps/shop_system_steps.py:835
+    And rare items should fetch higher prices  # features/steps/shop_system_steps.py:855
+    And shopkeeper gold should limit purchases # features/steps/shop_system_steps.py:881
+    And reputation should affect sell prices   # features/steps/shop_system_steps.py:901
+

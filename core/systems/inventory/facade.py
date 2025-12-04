@@ -3,9 +3,9 @@ Facade for inventory system
 """
 
 from typing import Dict, Any, Optional
-from ...models import Item
-from .services.inventory_service import InventoryService
-from .repositories.memory_repository import MemoryInventoryRepository
+from core.models import Item
+from core.systems.inventory.services.inventory_service import InventoryService
+from core.systems.inventory.repositories.memory_repository import MemoryInventoryRepository
 
 
 class InventorySystem:

@@ -4,8 +4,8 @@ Handles inventory business logic
 """
 
 from typing import List, Dict, Any, Optional
-from ...models import Item
-from .domain.inventory import Inventory, InventorySlot
+from core.models import Item
+from core.systems.inventory.domain.inventory import Inventory, InventorySlot
 
 
 class InventoryService:
@@ -69,7 +69,7 @@ class InventoryService:
         if not inventory:
             return None
 
-        from .domain.inventory import InventorySlotType
+        from core.systems.inventory.domain.inventory import InventorySlotType
 
         try:
             slot_enum = InventorySlotType(slot_type)

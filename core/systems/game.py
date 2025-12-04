@@ -3,26 +3,50 @@ Game system facade for BDD compatibility
 """
 
 from typing import Dict, Any, Optional, List
-from .character import CharacterSystem
-from .world import WorldSystem
+
+# Import BDD version
+from .game_bdd import (
+    start_new_game,
+    save_game,
+    load_game,
+    get_game_state,
+    continue_game
+)
 
 
 class GameSystem:
-    """Main game system that coordinates all subsystems"""
-
+    """Game system facade for BDD compatibility"""
+    
     def __init__(self):
+        from .character import CharacterSystem
+        from .world import WorldSystem
+        from .city import CitySystem
+        from .shop import ShopSystem
+        from .dungeon import DungeonSystem
+        from .quest import QuestSystem
+        from .equipment import EquipmentSystem
+        from .gamification import GamificationSystem
+        
         self.character_system = CharacterSystem()
         self.world_system = WorldSystem()
-        self._game_state = {"started": False, "player": None, "current_location": None}
+        self.city_system = CitySystem()
+        self.shop_system = ShopSystem()
+        self.dungeon_system = DungeonSystem()
+        self.quest_system = QuestSystem()
+        self.equipment_system = EquipmentSystem()
+        self.gamification_system = GamificationSystem()
+        
+        self._game_state = {}
 
     def start_new_game(self) -> Dict[str, Any]:
-        """Start a new game session"""
+        """Start a new game"""
         try:
-            self._game_state["started"] = True
-            start_location = self.world_system.get_starting_location()
-            self._game_state["current_location"] = start_location
-
-            return {
+            start_location = "riverdale"
+            self._game_state = {
+                "current_location": {"id": start_location, "name": "Riverdale"},
+                "player": None,
+                "time": 0,
+            }
                 "status": "success",
                 "message": "New game started successfully",
                 "starting_location": start_location,

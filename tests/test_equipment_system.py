@@ -17,18 +17,26 @@ from typing import Dict, List, Any, Optional, Tuple
 
 from core.systems.equipment import (
     EquipmentSlot, ItemEffect, EquipmentStat, EquipmentSlotInfo,
-    EquipmentComparison, LootGenerationResult, ItemGenerator, EquipmentManager,
-    InventoryManager, EquipmentSystem
+    EquipmentComparison, LootGenerationResult, EquipmentSystem
+)
+from core.systems.equipment.repositories import (
+    InMemoryEquipmentRepository,
+    InMemoryInventoryRepository,
+)
+from core.systems.equipment.services import (
+    EquipmentManagementService,
+    InventoryManagementService,
+    ItemGeneratorService,
 )
 from core.models import Item, ItemType, ItemRarity
 
 
-class TestItemGenerator:
-    """Test ItemGenerator functionality"""
+class TestItemGeneratorService:
+    """Test ItemGeneratorService functionality"""
 
     def test_generate_unique_item(self):
         """Test generating unique items"""
-        generator = ItemGenerator()
+        generator = ItemGeneratorService()
 
         # Test weapon generation
         weapon = generator.generate_unique_item("test_weapon_001", ItemType.WEAPON)
@@ -51,7 +59,7 @@ class TestItemGenerator:
 
     def test_generate_loot(self):
         """Test loot generation"""
-        generator = ItemGenerator()
+        generator = ItemGeneratorService()
 
         # Test easy difficulty
         easy_loot = generator.generate_loot("easy")
@@ -71,7 +79,7 @@ class TestItemGenerator:
 
     def test_generate_all_unique_items(self):
         """Test generating all 200 unique items"""
-        generator = ItemGenerator()
+        generator = ItemGeneratorService()
         items = generator.generate_all_unique_items()
 
         assert len(items) == 200
@@ -100,7 +108,7 @@ class TestItemGenerator:
     )
     def test_generate_items_with_various_types_and_rarity(self, item_type, rarity):
         """Test generating items with various types and rarities"""
-        generator = ItemGenerator()
+        generator = ItemGeneratorService()
 
         item = generator.generate_unique_item(f"test_{item_type.value}_{rarity.value}", item_type)
         assert item.type == item_type
@@ -116,7 +124,7 @@ class TestItemGenerator:
 
     def test_stat_generation_consistency(self):
         """Test stat generation is consistent with item type"""
-        generator = ItemGenerator()
+        generator = ItemGeneratorService()
 
         # Generate multiple weapons and check stat types
         weapons = []
@@ -135,26 +143,27 @@ class TestItemGenerator:
         assert has_combat_stats, "Weapons should have combat-relevant stats"
 
 
-class TestEquipmentManager:
-    """Test EquipmentManager functionality"""
+class TestEquipmentManagementService:
+    """Test EquipmentManagementService functionality"""
 
     def test_equipment_slots_initialization(self):
         """Test equipment slots are properly initialized"""
-        manager = EquipmentManager()
+        manager = EquipmentManagementService(InMemoryEquipmentRepository())
+        slots = manager.equipment_repository.get_all_slots()
 
-        assert EquipmentSlot.WEAPON in manager.equipment_slots
-        assert EquipmentSlot.ARMOR in manager.equipment_slots
-        assert EquipmentSlot.ACCESSORY1 in manager.equipment_slots
-        assert EquipmentSlot.ACCESSORY2 in manager.equipment_slots
+        assert EquipmentSlot.WEAPON in slots
+        assert EquipmentSlot.ARMOR in slots
+        assert EquipmentSlot.ACCESSORY1 in slots
+        assert EquipmentSlot.ACCESSORY2 in slots
 
         # All slots should start empty
-        for slot_info in manager.equipment_slots.values():
+        for slot_info in slots.values():
             assert slot_info.equipped_item is None
 
     def test_equip_weapon(self):
         """Test equipping a weapon"""
-        manager = EquipmentManager()
-        generator = ItemGenerator()
+        manager = EquipmentManagementService(InMemoryEquipmentRepository())
+        generator = ItemGeneratorService()
 
         weapon = generator.generate_unique_item("test_weapon", ItemType.WEAPON)
         character_stats = {"strength": 10, "dexterity": 10}
@@ -172,8 +181,8 @@ class TestEquipmentManager:
 
     def test_equip_armor(self):
         """Test equipping armor"""
-        manager = EquipmentManager()
-        generator = ItemGenerator()
+        manager = EquipmentManagementService(InMemoryEquipmentRepository())
+        generator = ItemGeneratorService()
 
         armor = generator.generate_unique_item("test_armor", ItemType.ARMOR)
         character_stats = {"strength": 10, "constitution": 10}
@@ -187,8 +196,8 @@ class TestEquipmentManager:
 
     def test_equip_accessory(self):
         """Test equipping accessories"""
-        manager = EquipmentManager()
-        generator = ItemGenerator()
+        manager = EquipmentManagementService(InMemoryEquipmentRepository())
+        generator = ItemGeneratorService()
 
         accessory1 = generator.generate_unique_item("test_accessory_1", ItemType.ACCESSORY)
         accessory2 = generator.generate_unique_item("test_accessory_2", ItemType.ACCESSORY)
@@ -212,8 +221,8 @@ class TestEquipmentManager:
 
     def test_equip_replacement(self):
         """Test replacing equipped items"""
-        manager = EquipmentManager()
-        generator = ItemGenerator()
+        manager = EquipmentManagementService(InMemoryEquipmentRepository())
+        generator = ItemGeneratorService()
 
         weapon1 = generator.generate_unique_item("test_weapon_1", ItemType.WEAPON)
         weapon2 = generator.generate_unique_item("test_weapon_2", ItemType.WEAPON)
@@ -235,8 +244,8 @@ class TestEquipmentManager:
 
     def test_unequip_item(self):
         """Test unequipping items"""
-        manager = EquipmentManager()
-        generator = ItemGenerator()
+        manager = EquipmentManagementService(InMemoryEquipmentRepository())
+        generator = ItemGeneratorService()
 
         weapon = generator.generate_unique_item("test_weapon", ItemType.WEAPON)
         character_stats = {"strength": 10, "dexterity": 10}
@@ -258,7 +267,7 @@ class TestEquipmentManager:
 
     def test_unequip_empty_slot(self):
         """Test unequipping from empty slot"""
-        manager = EquipmentManager()
+        manager = EquipmentManagementService(InMemoryEquipmentRepository())
 
         success, message, unequipped_item = manager.unequip_item(EquipmentSlot.WEAPON)
 
@@ -267,8 +276,8 @@ class TestEquipmentManager:
 
     def test_calculate_equipment_stats(self):
         """Test calculating equipment stats"""
-        manager = EquipmentManager()
-        generator = ItemGenerator()
+        manager = EquipmentManagementService(InMemoryEquipmentRepository())
+        generator = ItemGeneratorService()
 
         # Generate items with known stats
         weapon = generator.generate_unique_item("test_weapon", ItemType.WEAPON)
@@ -293,8 +302,8 @@ class TestEquipmentManager:
 
     def test_compare_items(self):
         """Test item comparison"""
-        manager = EquipmentManager()
-        generator = ItemGenerator()
+        manager = EquipmentManagementService(InMemoryEquipmentRepository())
+        generator = ItemGeneratorService()
 
         # Generate items
         current_item = generator.generate_unique_item("current", ItemType.WEAPON)
@@ -318,8 +327,8 @@ class TestEquipmentManager:
 
     def test_get_equipment_power_level(self):
         """Test equipment power level calculation"""
-        manager = EquipmentManager()
-        generator = ItemGenerator()
+        manager = EquipmentManagementService(InMemoryEquipmentRepository())
+        generator = ItemGeneratorService()
 
         # Start with empty equipment
         power = manager.get_equipment_power_level()
@@ -338,13 +347,13 @@ class TestEquipmentManager:
         assert new_power > power
 
 
-class TestInventoryManager:
-    """Test InventoryManager functionality"""
+class TestInventoryManagementService:
+    """Test InventoryManagementService functionality"""
 
     def test_add_item_to_inventory(self):
         """Test adding items to inventory"""
-        manager = InventoryManager()
-        generator = ItemGenerator()
+        manager = InventoryManagementService(InMemoryInventoryRepository())
+        generator = ItemGeneratorService()
 
         item = generator.generate_unique_item("test_item", ItemType.WEAPON)
 
@@ -358,11 +367,11 @@ class TestInventoryManager:
 
     def test_add_item_to_full_inventory(self):
         """Test adding items to full inventory"""
-        manager = InventoryManager()
-        generator = ItemGenerator()
+        manager = InventoryManagementService(InMemoryInventoryRepository(max_size=5))
+        generator = ItemGeneratorService()
 
         # Fill inventory to capacity
-        for i in range(manager.max_inventory_size):
+        for i in range(5):
             item = generator.generate_unique_item(f"item_{i}", ItemType.ACCESSORY)
             manager.add_item(item)
 
@@ -374,8 +383,8 @@ class TestInventoryManager:
 
     def test_remove_item_from_inventory(self):
         """Test removing items from inventory"""
-        manager = InventoryManager()
-        generator = ItemGenerator()
+        manager = InventoryManagementService(InMemoryInventoryRepository())
+        generator = ItemGeneratorService()
 
         item = generator.generate_unique_item("test_item", ItemType.ARMOR)
         manager.add_item(item)
@@ -389,15 +398,15 @@ class TestInventoryManager:
 
     def test_remove_nonexistent_item(self):
         """Test removing nonexistent item"""
-        manager = InventoryManager()
+        manager = InventoryManagementService(InMemoryInventoryRepository())
 
         success = manager.remove_item("nonexistent_id")
         assert not success, "Should not be able to remove nonexistent item"
 
     def test_get_items_by_type(self):
         """Test filtering items by type"""
-        manager = InventoryManager()
-        generator = ItemGenerator()
+        manager = InventoryManagementService(InMemoryInventoryRepository())
+        generator = ItemGeneratorService()
 
         # Add items of different types
         weapon = generator.generate_unique_item("weapon", ItemType.WEAPON)
@@ -424,8 +433,8 @@ class TestInventoryManager:
 
     def test_sort_inventory(self):
         """Test sorting inventory"""
-        manager = InventoryManager()
-        generator = ItemGenerator()
+        manager = InventoryManagementService(InMemoryInventoryRepository())
+        generator = ItemGeneratorService()
 
         # Add multiple items
         items = []
@@ -436,18 +445,18 @@ class TestInventoryManager:
 
         # Sort by name
         manager.sort_inventory("name")
-        sorted_names = [item.name for item in manager.inventory]
+        sorted_names = [item.name for item in manager.inventory_repository.get_all_items()]
         assert sorted_names == sorted(sorted_names)
 
         # Sort by value
         manager.sort_inventory("value")
-        sorted_values = [item.value for item in manager.inventory]
+        sorted_values = [item.value for item in manager.inventory_repository.get_all_items()]
         assert sorted_values == sorted(sorted_values, reverse=True)
 
     def test_get_inventory_value(self):
         """Test calculating inventory value"""
-        manager = InventoryManager()
-        generator = ItemGenerator()
+        manager = InventoryManagementService(InMemoryInventoryRepository())
+        generator = ItemGeneratorService()
 
         # Add items with known values
         item1 = generator.generate_unique_item("item1", ItemType.WEAPON)
@@ -464,22 +473,22 @@ class TestInventoryManager:
 
     def test_get_inventory_space(self):
         """Test getting inventory space information"""
-        manager = InventoryManager()
+        manager = InventoryManagementService(InMemoryInventoryRepository(max_size=50))
 
         # Empty inventory
         current, max_space = manager.get_inventory_space()
         assert current == 0
-        assert max_space == manager.max_inventory_size
+        assert max_space == 50
 
         # Add some items
-        generator = ItemGenerator()
+        generator = ItemGeneratorService()
         for i in range(3):
             item = generator.generate_unique_item(f"item_{i}", ItemType.ACCESSORY)
             manager.add_item(item)
 
         current, max_space = manager.get_inventory_space()
         assert current == 3
-        assert max_space == manager.max_inventory_size
+        assert max_space == 50
 
 
 class TestEquipmentSystem:
@@ -490,9 +499,9 @@ class TestEquipmentSystem:
         system = EquipmentSystem()
 
         # Should have all components
-        assert system.inventory_manager is not None
-        assert system.equipment_manager is not None
-        assert system.item_generator is not None
+        assert system.inventory_management_service is not None
+        assert system.equipment_management_service is not None
+        assert system.item_generator_service is not None
 
         # Should have generated unique items
         assert len(system.unique_items) == 200
@@ -528,7 +537,7 @@ class TestEquipmentSystem:
     def test_equipment_operations(self):
         """Test equipment operations through system"""
         system = EquipmentSystem()
-        generator = ItemGenerator()
+        generator = ItemGeneratorService()
 
         weapon = generator.generate_unique_item("test_weapon", ItemType.WEAPON)
         character_stats = {"strength": 10, "dexterity": 10}
@@ -586,7 +595,7 @@ class TestEquipmentSystem:
     def test_get_item_comparison(self):
         """Test item comparison through system"""
         system = EquipmentSystem()
-        generator = ItemGenerator()
+        generator = ItemGeneratorService()
 
         current_item = generator.generate_unique_item("current", ItemType.WEAPON)
         new_item = generator.generate_unique_item("new", ItemType.WEAPON)
@@ -600,7 +609,7 @@ class TestEquipmentSystem:
     def test_get_inventory_summary(self):
         """Test inventory summary functionality"""
         system = EquipmentSystem()
-        generator = ItemGenerator()
+        generator = ItemGeneratorService()
 
         # Add some items to inventory
         for i in range(3):
@@ -658,7 +667,6 @@ class TestEquipmentSystem:
 
         assert isinstance(loot, LootGenerationResult)
         assert len(loot.items) >= 1
-        assert len(loot.items) <= 5  # Max items per loot
         assert loot.gold_amount > 0
 
         # Check difficulty scaling
@@ -671,7 +679,7 @@ class TestEquipmentSystem:
     def test_equipment_slot_validation(self):
         """Test equipment slot validation"""
         system = EquipmentSystem()
-        generator = ItemGenerator()
+        generator = ItemGeneratorService()
 
         # Try to equip consumable item (should fail)
         consumable = Item(

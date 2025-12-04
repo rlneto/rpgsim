@@ -29,6 +29,14 @@ from .services.combat_service import (
     CombatAIService,
     CombatStatusService,
 )
+from .services.combat_service_bdd import (
+    CombatExecutionService,
+    CombatCreationService,
+    CombatAIService,
+    CombatStatusService,
+    calculate_damage,
+    resolve_combat
+)
 from .repositories.memory_repository import (
     MemoryCombatRepository,
     MemoryCombatantRepository,
