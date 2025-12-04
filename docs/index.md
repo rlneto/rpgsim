@@ -1,6 +1,6 @@
-# Welcome to MkDocs
+# RPG API Documentation
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+Welcome to the API documentation for the RPG project.
 
 ## Commands
 
