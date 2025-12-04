@@ -9,6 +9,7 @@ from core.models import (
     Item, ItemRarity, ItemType,
     Enemy, EnemyType
 )
+from core.spells.facade import SpellSystem
 from core.systems.character import (
     create_character,
     level_up_character,
@@ -188,8 +189,8 @@ class TestCompleteCharacterWorkflow:
         # Validate mage-specific attributes
         assert character.stats.intelligence >= 12
         assert character.stats.intelligence > character.stats.strength
-        assert "Fireball" in character.abilities
-        assert "Magic Missile" in character.abilities
+        assert "fireball" in character.abilities
+        assert "magic_missile" in character.abilities
         assert character.max_hp < 50  # Lower HP than warrior
         
         # Step 2: Level progression with magic focus
@@ -203,7 +204,7 @@ class TestCompleteCharacterWorkflow:
             
             # Learn magical abilities
             if level >= 3:
-                assert any("Magic" in ability for ability in character.abilities)
+                assert any("magic" in ability for ability in character.abilities)
         
         # Step 3: Magic equipment workflow
         staff = Item(
@@ -240,28 +241,31 @@ class TestCompleteCharacterWorkflow:
             max_hp=40,
             attack_power=12,
             defense=3,
-            abilities=["Fireball", "Lightning Bolt"],
+            abilities=["fireball", "lightning_bolt"],
             reward_xp=150,
             reward_gold=75,
             boss=False
         )
         
         # Simulate magic combat
-        from core.systems.combat import calculate_spell_damage
+        spell_system = SpellSystem()
         
         # Player casts fireball
-        spell_damage = calculate_spell_damage(character, "Fireball")
+        result = spell_system.cast_spell(character, dark_mage, "fireball")
+        spell_damage = result["damage"]
         assert spell_damage >= 15  # Should do good spell damage
         
         dark_mage.hp -= spell_damage
         assert dark_mage.hp < dark_mage.max_hp
         
         # Enemy casts back
-        enemy_spell_damage = calculate_spell_damage(dark_mage, "Lightning Bolt")
+        enemy_result = spell_system.cast_spell(dark_mage, character, "lightning_bolt")
+        enemy_spell_damage = enemy_result["damage"]
         character.hp -= enemy_spell_damage
         
         # Player defeats enemy with spell
-        final_spell_damage = calculate_spell_damage(character, "Magic Missile")
+        final_result = spell_system.cast_spell(character, dark_mage, "magic_missile")
+        final_spell_damage = final_result["damage"]
         dark_mage.hp -= final_spell_damage
         assert dark_mage.hp <= 0
         
@@ -552,7 +556,7 @@ class TestCompleteCharacterWorkflow:
         
         # Test class-specific abilities
         assert warrior.has_ability("Power Strike")
-        assert mage.has_ability("Fireball")
+        assert mage.has_ability("fireball")
         assert rogue.has_ability("Stealth")
         assert cleric.has_ability("Heal")
         assert ranger.has_ability("Precise Shot")
