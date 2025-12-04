@@ -13,7 +13,40 @@ from .game_bdd import (
     continue_game
 )
 
-            return {
+
+class GameSystem:
+    """Game system facade for BDD compatibility"""
+    
+    def __init__(self):
+        from .character import CharacterSystem
+        from .world import WorldSystem
+        from .city import CitySystem
+        from .shop import ShopSystem
+        from .dungeon import DungeonSystem
+        from .quest import QuestSystem
+        from .equipment import EquipmentSystem
+        from .gamification import GamificationSystem
+        
+        self.character_system = CharacterSystem()
+        self.world_system = WorldSystem()
+        self.city_system = CitySystem()
+        self.shop_system = ShopSystem()
+        self.dungeon_system = DungeonSystem()
+        self.quest_system = QuestSystem()
+        self.equipment_system = EquipmentSystem()
+        self.gamification_system = GamificationSystem()
+        
+        self._game_state = {}
+
+    def start_new_game(self) -> Dict[str, Any]:
+        """Start a new game"""
+        try:
+            start_location = "riverdale"
+            self._game_state = {
+                "current_location": {"id": start_location, "name": "Riverdale"},
+                "player": None,
+                "time": 0,
+            }
                 "status": "success",
                 "message": "New game started successfully",
                 "starting_location": start_location,

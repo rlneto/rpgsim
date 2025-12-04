@@ -31,6 +31,15 @@ from .facade import (
     verify_minimum_abilities,
 )
 
+# Legacy functions for backward compatibility
+def damage_character(character: Character, amount: int) -> int:
+    """Damage character by specified amount"""
+    return character.damage(amount)
+
+def calculate_max_hp(character: Character) -> int:
+    """Calculate maximum HP for character"""
+    return character.max_hp
+
 __all__ = [
     # Public API
     "CharacterSystem",
@@ -42,6 +51,9 @@ __all__ = [
     "validate_class_balance",
     "verify_unique_mechanics",
     "verify_minimum_abilities",
+    # Legacy compatibility
+    "damage_character",
+    "calculate_max_hp",
     # Domain objects
     "Character",
     "CharacterClass",
