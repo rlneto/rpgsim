@@ -9,8 +9,21 @@ import json
 
 # Global city state
 _cities = {}
-_city_events = []
+_city_events = {}
 _city_populations = {}
+
+class City:
+    """City model for city management system"""
+    
+    def __init__(self, city_id: str, name: str, city_type: str = "town"):
+        self.city_id = city_id
+        self.name = name
+        self.type = city_type
+        self.population = 0
+        self.economy = {}
+        self.services = {}
+        self.npcs = []
+        self.locations = []
 
 class CityManager:
     """Manager for city systems and economy"""

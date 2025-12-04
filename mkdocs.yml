@@ -49,3 +49,18 @@ plugins:
 nav:
   - Home: index.md
   - API Reference: reference/
+  - API:
+    - Introduction: api/index.md
+    - Character: api/character.md
+    - City: api/city.md
+    - Combat: api/combat.md
+    - Dungeon: api/dungeon.md
+    - Economic: api/economic.md
+    - Equipment: api/equipment.md
+    - Gamification: api/gamification.md
+    - Inventory: api/inventory.md
+    - Progression: api/progression.md
+    - Quest: api/quest.md
+    - Shop: api/shop.md
+    - Travel: api/travel.md
+    - World: api/world.md

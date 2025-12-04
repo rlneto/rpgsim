@@ -268,5 +268,18 @@ CHARACTER_CLASSES: Dict[CharacterClass, CharacterClassConfig] = {
             "Dual Wield", "Beast Taming", "Nature's Wrath",
             "Camouflage", "Hunt", "Pack Tactics"
         ]
+    ),
+    CharacterClass.PALADIN: CharacterClassConfig(
+        mechanic="Divine Smite and Auras",
+        base_stats=CharacterStats(
+            strength=16, dexterity=11, intelligence=12,
+            wisdom=14, charisma=16, constitution=15
+        ),
+        primary_stat="strength",
+        abilities=[
+            "Smite", "Lay on Hands", "Divine Sense", "Aura of Protection",
+            "Divine Health", "Sacred Oath", "Crusader's Mantle",
+            "Holy Avenger", "Righteous Cause", "Vindicator's Shield"
+        ]
     )
 }
