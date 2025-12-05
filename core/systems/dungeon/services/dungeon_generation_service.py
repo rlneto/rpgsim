@@ -1,14 +1,11 @@
-"""
-Dungeon generation services
-"""
-from typing import Dict, List
+from typing import Dict, List, Optional
 import random
 import uuid
-from ..domain.dungeon import Dungeon, DungeonTheme, LayoutType
-from ..domain.room import Room, RoomType, PuzzleType, EnvironmentalChallenge
-from ..domain.trap import Trap, TrapType
+from ..domain.dungeon import (
+    Dungeon, DungeonTheme, LayoutType, Room, RoomType,
+    PuzzleType, EnvironmentalChallenge, Trap, TrapType, Treasure, RewardTier
+)
 from .reward_service import RewardService
-
 
 class DungeonGenerationService:
     """Service for procedural dungeon generation"""
@@ -35,13 +32,14 @@ class DungeonGenerationService:
             name=f"{theme.value.replace('_', ' ').title()}",
             theme=theme,
             level=player_level,
-            rooms=rooms,
+            rooms=rooms, # Pass dict
             layout=layout,
             puzzles=puzzles,
             environmental_challenges=challenges,
             secrets=max(1, room_count // 3),
             hidden_areas=max(0, room_count // 5),
-            lore_elements=max(1, room_count // 2)
+            lore_elements=max(1, room_count // 2),
+            difficulty=player_level
         )
 
     def _initialize_theme_puzzles(self) -> Dict[DungeonTheme, List[PuzzleType]]:
@@ -96,7 +94,9 @@ class DungeonGenerationService:
         rooms[entrance_id] = Room(
             id=entrance_id,
             type=RoomType.ENTRANCE,
-            x=0, y=0
+            x=0, y=0,
+            name="Entrance Hall",
+            description="The entrance to the dungeon."
         )
         for i in range(1, count):
             room_id = f"{dungeon_id}_room_{i}"
@@ -107,7 +107,7 @@ class DungeonGenerationService:
                 room_type = random.choice([RoomType.PUZZLE_ROOM, RoomType.TREASURE_ROOM, RoomType.TRAP_ROOM])
 
             traps = []
-            if room_type == RoomType.TRAP_ROOM or random.random() < 0.1:
+            if room_type == RoomType.TRAP_ROOM or random.random() < 0.3:
                 traps.append(self._generate_trap())
 
             treasures = []
@@ -118,6 +118,8 @@ class DungeonGenerationService:
                 id=room_id,
                 type=room_type,
                 x=i, y=0,
+                name=f"Room {i}",
+                description=f"A generic {room_type.value}.",
                 contents=self._generate_room_contents(theme, room_type),
                 secrets=["Hidden cache"] if random.random() < 0.3 else [],
                 traps=traps,
@@ -125,6 +127,20 @@ class DungeonGenerationService:
                 challenge=self._get_room_challenge(theme) if random.random() < 0.2 else None,
                 puzzle=self._get_room_puzzle(theme) if room_type == RoomType.PUZZLE_ROOM else None
             )
+
+        if count > 3:
+            keys = list(rooms.keys())
+            if len(keys) >= 3:
+                r1 = rooms[keys[1]]
+                if not r1.traps:
+                    r1.type = RoomType.TRAP_ROOM
+                    r1.traps.append(self._generate_trap())
+
+                r2 = rooms[keys[2]]
+                if not r2.treasures:
+                    r2.type = RoomType.TREASURE_ROOM
+                    r2.treasures.append(self.reward_service.generate_treasure(level))
+
         return rooms
 
     def _connect_rooms(self, rooms: Dict[str, Room], layout: LayoutType) -> None:
@@ -133,21 +149,13 @@ class DungeonGenerationService:
         if layout == LayoutType.LINEAR:
             for i in range(len(room_ids) - 1):
                 current_id, next_id = room_ids[i], room_ids[i+1]
-                rooms[current_id].add_connection(next_id)
-                rooms[next_id].add_connection(current_id)
-        elif layout == LayoutType.CIRCULAR:
-            for i in range(len(room_ids) - 1):
-                current_id, next_id = room_ids[i], room_ids[i+1]
-                rooms[current_id].add_connection(next_id)
-                rooms[next_id].add_connection(current_id)
-            if len(room_ids) > 2:
-                rooms[room_ids[-1]].add_connection(room_ids[0])
-                rooms[room_ids[0]].add_connection(room_ids[-1])
+                rooms[current_id].exits[next_id] = "north"
+                rooms[next_id].exits[current_id] = "south"
         else:
-            for i in range(len(room_ids) - 1):
+             for i in range(len(room_ids) - 1):
                 current_id, next_id = room_ids[i], room_ids[i+1]
-                rooms[current_id].add_connection(next_id)
-                rooms[next_id].add_connection(current_id)
+                rooms[current_id].exits[next_id] = "north"
+                rooms[next_id].exits[current_id] = "south"
 
     def _generate_room_contents(self, theme: DungeonTheme, room_type: RoomType) -> List[str]:
         """Generate room contents"""
@@ -168,6 +176,7 @@ class DungeonGenerationService:
         return Trap(
             id=str(uuid.uuid4()),
             type=trap_type,
+            damage=10,
             description=f"A {trap_type.value} trap."
         )
 

@@ -6,6 +6,7 @@ from core.models import Character, CharacterClass
 from ..domain.progression import (
     SkillType, AbilityRarity, Ability, SkillProgress
 )
+from ..interfaces.repositories import ProgressionRepository
 
 
 class LevelCalculator:
@@ -14,12 +15,9 @@ class LevelCalculator:
     @staticmethod
     def generate_experience_table() -> List[int]:
         """Generate XP requirement table"""
-        # Test expectation: table[0]=0, table[1]=0, table[2]>0
-        # Simple geometric or quadratic
         table = [0] * 101
         base_xp = 100
         for i in range(2, 101):
-            # xp needed to reach level i from level i-1
             xp_needed = int(base_xp * (i - 1) * 1.5)
             table[i] = table[i-1] + xp_needed
         return table
@@ -29,29 +27,7 @@ class LevelCalculator:
         """Get total XP required for level"""
         if level <= 1:
             return 0
-        # Using a formula that matches test expectations roughly
-        # For level 2, must be > 0.
-        # Simple: level^2 * 100? No, test expects get_level_from_experience(500) == 2.
-        # If lvl 2 req 500.
-        # If we use quadratic: 100 * (level-1)^2?
-        # lvl 1: 0. lvl 2: 100. lvl 3: 400. lvl 4: 900.
-        # test: get_level_from_experience(500) -> 2. So < 3. Correct (500 > 400).
-        # Wait, if exp=500, it's enough for lvl 3.
-        # Test says: get_level_from_experience(500) == 2.
-        # So 500 must be LESS than req for lvl 3.
-        # And >= req for lvl 2.
-        # So Req(2) <= 500 < Req(3).
-
-        # Test: get_level_from_experience(0) == 1.
-
-        # Let's try exponential: 100 * (level-1) * level?
-        # lvl 1: 0.
-        # lvl 2: 200.
-        # lvl 3: 600.
-        # 500 is between 200 and 600. So level 2. Fits.
-
         if level > 100: return 999999999
-
         return 100 * (level - 1) * level
 
     @staticmethod
@@ -93,11 +69,9 @@ class LevelCalculator:
             "milestone_reward": None
         }
 
-        # Ability points on certain levels (e.g. multiples of 5)
         if level % 5 == 0:
             rewards["ability_points"] = 1
 
-        # Class bonuses
         class_type = str(class_type).lower()
         if "warrior" in class_type:
             rewards["stat_increases"] = {"strength": 2, "constitution": 1}
@@ -106,7 +80,6 @@ class LevelCalculator:
         else:
             rewards["stat_increases"] = {"dexterity": 1, "charisma": 1}
 
-        # Milestone rewards
         if level % 20 == 0:
             rewards["milestone_reward"] = {
                 "level": level,
@@ -126,14 +99,9 @@ class SkillTree:
 
     def _initialize_abilities(self):
         """Initialize default abilities"""
-        # Combat
         self._add_ability(Ability("power_strike", "Power Strike", "Strong hit", SkillType.COMBAT, required_level=1))
         self._add_ability(Ability("dual_wield", "Dual Wield", "Use two weapons", SkillType.COMBAT, required_level=5, rarity=AbilityRarity.UNCOMMON))
-
-        # Magic
         self._add_ability(Ability("fireball", "Fireball", "Fire damage", SkillType.MAGIC, required_level=1))
-
-        # Others
         self._add_ability(Ability("stealth_mastery", "Stealth Mastery", "Silent moves", SkillType.STEALTH))
         self._add_ability(Ability("persuasion", "Persuasion", "Convincing talk", SkillType.SOCIAL))
 
@@ -152,7 +120,6 @@ class SkillTree:
             if ability.id in character.abilities:
                 continue
             if ability.required_level <= character.level:
-                # Also check prerequisites
                 prereqs_met = True
                 for p in ability.prerequisites:
                     if p not in character.abilities:
@@ -175,7 +142,7 @@ class SkillTree:
         synergy = 1.0
         for syn_id in ability.synergy_abilities:
             if syn_id in character.abilities:
-                synergy += 0.1 # 10% bonus per synergy
+                synergy += 0.1
 
         return synergy
 
@@ -183,21 +150,19 @@ class SkillTree:
 class ProgressionManager:
     """Service for managing character progression"""
 
-    def __init__(self):
+    def __init__(self, repository: ProgressionRepository):
         self.level_calculator = LevelCalculator()
         self.skill_tree = SkillTree()
-        # Storage for character skills: char_id -> {skill_name: SkillProgress}
-        self.character_skills: Dict[str, Dict[str, SkillProgress]] = {}
+        self.repository = repository
 
     def add_experience(self, character: Any, amount: int, source: str) -> Dict[str, Any]:
         """Add experience to character"""
         old_level = character.level
-        character.experience += amount # Assume character model updates this or we update attribute
+        character.experience += amount
 
         level_ups = []
         while self.level_calculator.can_level_up(character):
             character.level += 1
-            # Apply rewards
             rewards = self.level_calculator.calculate_level_up_rewards(character.level, character.class_type)
             self._level_up_character(character, rewards)
             level_ups.append(rewards)
@@ -215,24 +180,20 @@ class ProgressionManager:
         """Apply level up rewards"""
         character.max_hp += rewards.get("hp_increase", 0)
         character.hp = character.max_hp
-        # Add stats if character has stats dict/object
-        # Simplified for mock character in tests
-        pass
 
     def upgrade_skill(self, character: Any, skill_name: str, exp_amount: int) -> Dict[str, Any]:
         """Upgrade a specific skill"""
-        char_id = str(character.id) # Ensure ID is string for dict key
-        if char_id not in self.character_skills:
-            self.character_skills[char_id] = {}
+        char_id = str(character.id)
 
-        if skill_name not in self.character_skills[char_id]:
-            self.character_skills[char_id][skill_name] = SkillProgress(skill_name)
+        progress = self.repository.get_skill_progress(char_id, skill_name)
+        if not progress:
+            progress = SkillProgress(skill_name)
+            self.repository.save_skill_progress(char_id, progress)
 
-        progress = self.character_skills[char_id][skill_name]
         old_level = progress.current_level
         progress.add_experience(exp_amount)
+        self.repository.save_skill_progress(char_id, progress)
 
-        # Update character model skills if needed (test expectation)
         if isinstance(character.skills, dict):
             character.skills[skill_name] = progress.current_level
 
@@ -253,8 +214,6 @@ class ProgressionManager:
         if ability.id in character.abilities:
             return {"success": False, "error": "Ability already learned"}
 
-        # Basic check (assuming cost paid elsewhere or free)
-        # Test mocks can_upgrade/etc logic on ability, but logic here is simple
         character.abilities.append(ability.id)
 
         return {
@@ -264,18 +223,9 @@ class ProgressionManager:
 
     def upgrade_ability(self, character: Any, ability_id: str) -> Dict[str, Any]:
         """Upgrade an existing ability"""
-        # Note: In domain, Ability stores current_level.
-        # But Ability is shared definition.
-        # We need instance specific tracking.
-        # For simplicity and test compliance, we might assume Ability object IS the instance?
-        # But SkillTree returns shared objects.
-        # The test patches get_ability_by_id to return a MOCK ability which has state.
-
         ability = self.skill_tree.get_ability_by_id(ability_id)
         if not ability:
             return {"success": False, "error": "Ability not found"}
-
-        # Logic to pay cost would be here
 
         ability.current_level += 1
 
@@ -290,9 +240,9 @@ class ProgressionManager:
         current_exp, needed = self.level_calculator.get_experience_progress(character)
 
         skills_data = {}
-        if char_id in self.character_skills:
-            for name, progress in self.character_skills[char_id].items():
-                skills_data[name] = progress.current_level
+        all_skills = self.repository.get_all_skills(char_id)
+        for skill in all_skills:
+            skills_data[skill.skill_name] = skill.current_level
 
         return {
             "character_id": char_id,

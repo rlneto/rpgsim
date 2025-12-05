@@ -47,6 +47,7 @@ class GameSystem:
                 "player": None,
                 "time": 0,
             }
+            return {
                 "status": "success",
                 "message": "New game started successfully",
                 "starting_location": start_location,

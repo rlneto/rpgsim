@@ -25,5 +25,5 @@ __all__ = [
     'ProgressVisualization', 'DynamicDifficultyAdjustment',
     'FlowStateOptimizer', 'NeuroadaptiveEngagementSystem', 'RewardService',
     'ContentVarietyOptimizer', 'InterventionSystem', 'GamificationSystem',
-    'get_gamification_system', 'create_gamification_system', 'ProgressService'
+    'ProgressService', 'get_gamification_system', 'create_gamification_system'
 ]
