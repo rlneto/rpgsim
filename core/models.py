@@ -9,6 +9,9 @@ from typing import List, Dict, Any, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 
+# Import SpellBook from spells domain for Character compatibility
+from core.systems.spells.domain.spells import SpellBook
+
 
 class CharacterClass(str, Enum):
     """Character class enumeration - explicit mapping for agent understanding."""
@@ -96,7 +99,7 @@ class Character(BaseModel):
     max_hp: int = Field(ge=0, description="Maximum hit points")
     mana: int = Field(default=0, ge=0, description="Current mana points")
     max_mana: int = Field(default=0, ge=0, description="Maximum mana points")
-    spell_book: Optional['SpellBook'] = Field(default=None, description="Character's spell book")
+    spell_book: Optional[SpellBook] = Field(default=None, description="Character's spell book")
     gold: int = Field(ge=0, description="Gold amount")
     abilities: List[str] = Field(
         default_factory=list, description="Character abilities"
