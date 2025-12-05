@@ -1,9 +1,8 @@
+from .equipment_service import EquipmentService
 from .item_generator_service import ItemGeneratorService
-from .equipment_management_service import EquipmentManagementService
 from .inventory_management_service import InventoryManagementService
 
-__all__ = [
-    "ItemGeneratorService",
-    "EquipmentManagementService",
-    "InventoryManagementService",
-]
+# Alias for tests
+EquipmentManagementService = EquipmentService
+
+__all__ = ["EquipmentService", "ItemGeneratorService", "EquipmentManagementService", "InventoryManagementService"]

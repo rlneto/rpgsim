@@ -7,20 +7,21 @@ from .domain.progression import SkillType
 from .services.progression_service import (
     ProgressionManager, SkillTree, LevelCalculator
 )
+from .repositories.memory_repository import MemoryProgressionRepository
 
 
 class ProgressionSystem:
     """Facade for Progression System"""
 
     def __init__(self):
-        self.progression_manager = ProgressionManager()
+        self.repository = MemoryProgressionRepository()
+        self.progression_manager = ProgressionManager(self.repository)
         self.character_progress: Dict[str, Any] = {} # Track stats per character
 
     def add_experience(self, character: Character, amount: int, source: str) -> Dict[str, Any]:
         """Add experience"""
         result = self.progression_manager.add_experience(character, amount, source)
 
-        # Track progress locally
         char_id = str(character.id)
         if char_id not in self.character_progress:
             self.character_progress[char_id] = {
@@ -62,7 +63,6 @@ class ProgressionSystem:
     def get_skill_trees(self) -> Dict[SkillType, List[Any]]:
         """Get skill trees"""
         result = {}
-        # Iterate over SkillType enum
         for st in SkillType:
             result[st] = self.progression_manager.skill_tree.get_ability_tree(st)
         return result

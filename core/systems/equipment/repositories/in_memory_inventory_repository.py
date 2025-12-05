@@ -1,39 +1,23 @@
-"""
-In-Memory Inventory Repository
-"""
-from typing import List, Optional, Tuple
-from core.models import Item
-from ..interfaces.iinventory_repository import IInventoryRepository
+from typing import Dict, List, Optional
+from ..domain.equipment import Item
 
-
-class InMemoryInventoryRepository(IInventoryRepository):
-    """In-memory implementation of the inventory repository"""
-
+class InMemoryInventoryRepository:
     def __init__(self, max_size: int = 100):
-        self._inventory: List[Item] = []
-        self._max_size = max_size
+        self._items: Dict[str, Item] = {}
+        self.max_size = max_size
+
+    def add_item(self, item: Item) -> None:
+        self._items[item.id] = item
+
+    def remove_item(self, item_id: str) -> None:
+        if item_id in self._items:
+            del self._items[item_id]
+
+    def get_item(self, item_id: str) -> Optional[Item]:
+        return self._items.get(item_id)
 
     def get_all_items(self) -> List[Item]:
-        return self._inventory
+        return list(self._items.values())
 
-    def get_item_by_id(self, item_id: str) -> Optional[Item]:
-        for item in self._inventory:
-            if item.id == item_id:
-                return item
-        return None
-
-    def add_item(self, item: Item) -> bool:
-        if len(self._inventory) >= self._max_size:
-            return False
-        self._inventory.append(item)
-        return True
-
-    def remove_item(self, item_id: str) -> bool:
-        for i, item in enumerate(self._inventory):
-            if item.id == item_id:
-                self._inventory.pop(i)
-                return True
-        return False
-
-    def get_inventory_space(self) -> Tuple[int, int]:
-        return len(self._inventory), self._max_size
+    def is_full(self) -> bool:
+        return len(self._items) >= self.max_size

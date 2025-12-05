@@ -6,6 +6,8 @@ from .domain.equipment import (
     EquipmentSlotInfo,
     EquipmentComparison,
     LootGenerationResult,
+    Equipment,
+    Item
 )
 from .facade import EquipmentSystem
 
@@ -17,4 +19,6 @@ __all__ = [
     "EquipmentComparison",
     "LootGenerationResult",
     "EquipmentSystem",
+    "Equipment",
+    "Item"
 ]
