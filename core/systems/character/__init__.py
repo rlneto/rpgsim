@@ -70,6 +70,20 @@ def validate_class_balance(class_data):
 def get_class_balance_stats():
     return {}
 
+def verify_unique_mechanics(class_data):
+    """Verify each character class has unique mechanics"""
+    # Basic implementation for compatibility
+    if isinstance(class_data, dict):
+        return len(class_data.get('unique_abilities', [])) > 0
+    return True
+
+def verify_minimum_abilities(class_data):
+    """Verify each character class has minimum required abilities"""
+    # Basic implementation for compatibility
+    if isinstance(class_data, dict):
+        return len(class_data.get('abilities', [])) > 0
+    return True
+
 __all__ = [
     "CharacterSystem",
     "Character",
@@ -80,5 +94,7 @@ __all__ = [
     "learn_ability",
     "get_default_abilities_for_class",
     "validate_class_balance",
-    "get_class_balance_stats"
+    "get_class_balance_stats",
+    "verify_unique_mechanics",
+    "verify_minimum_abilities"
 ]

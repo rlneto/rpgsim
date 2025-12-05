@@ -1,45 +1,83 @@
-Feature: Shop System # features/shop_system.feature:1
+Feature: Character Creation # features/01_character_creation.feature:5
+  As a RPGSim player
+  I want to create a new character
+  To start my adventure
+  Scenario: Criar personagem Guerreiro com dados válidos                          # features/01_character_creation.feature:11
+    Given eu informo o nome "Aragorn" para o personagem                           # features/steps/bdd_base_steps.py:84
+    And eu seleciono a classe "guerreiro" para o personagem                       # features/steps/character_creation_pt_steps.py:30
+    When eu crio o personagem                                                     # features/steps/character_creation_pt_steps.py:36
+    Then o personagem deve ter o nome "Aragorn"                                   # features/steps/character_creation_pt_steps.py:121
+    And o personagem deve ter a classe "guerreiro"                                # features/steps/character_creation_pt_steps.py:129
+    And o personagem deve estar no nível 1                                        # features/steps/character_creation_pt_steps.py:137
+    And o personagem deve ter força 15                                            # features/steps/character_creation_pt_steps.py:146
+    And o personagem deve ter destreza 10                                         # features/steps/character_creation_pt_steps.py:166
+    And o personagem deve ter inteligência 8                                      # features/steps/character_creation_pt_steps.py:174
+    And o personagem deve ter sabedoria 10                                        # features/steps/character_creation_pt_steps.py:182
+    And o personagem deve ter carisma 8                                           # features/steps/character_creation_pt_steps.py:190
+    And o personagem deve ter constituição 14                                     # features/steps/character_creation_pt_steps.py:198
+    And o personagem deve ter HP 60                                               # features/steps/character_creation_pt_steps.py:206
+    And o personagem deve ter HP máximo 60                                        # features/steps/character_creation_pt_steps.py:214
+    And o personagem deve ter 100 gold                                            # features/steps/character_creation_pt_steps.py:222
+    And o personagem deve ter as habilidades ["Attack", "Defend", "Power Strike"] # features/steps/character_creation_pt_steps.py:230
+    And o personagem deve ter inventário vazio                                    # features/steps/character_creation_pt_steps.py:242
 
-  Scenario: Shop inventory management              # features/shop_system.feature:3
-    Given player enters any shop                   # features/steps/shop_system_steps.py:6
-    When they browse available items               # features/steps/shop_system_steps.py:44
-    Then shop should have 15-30 items in stock     # features/steps/shop_system_steps.py:139
-    And inventory should refresh periodically      # features/steps/shop_system_steps.py:148
-    And rare items should appear occasionally      # features/steps/shop_system_steps.py:180
-    And shop type should determine inventory focus # features/steps/shop_system_steps.py:201
+  Scenario: Criar personagem Mago com dados válidos                           # features/01_character_creation.feature:31
+    Given eu informo o nome "Gandalf" para o personagem                       # features/steps/bdd_base_steps.py:84
+    And eu seleciono a classe "mago" para o personagem                        # features/steps/character_creation_pt_steps.py:30
+    When eu crio o personagem                                                 # features/steps/character_creation_pt_steps.py:36
+    Then o personagem deve ter o nome "Gandalf"                               # features/steps/character_creation_pt_steps.py:121
+    And o personagem deve ter a classe "mago"                                 # features/steps/character_creation_pt_steps.py:129
+    And o personagem deve estar no nível 1                                    # features/steps/character_creation_pt_steps.py:137
+    And o personagem deve ter força 8                                         # features/steps/character_creation_pt_steps.py:146
+    And o personagem deve ter destreza 12                                     # features/steps/character_creation_pt_steps.py:166
+    And o personagem deve ter inteligência 16                                 # features/steps/character_creation_pt_steps.py:174
+    And o personagem deve ter sabedoria 14                                    # features/steps/character_creation_pt_steps.py:182
+    And o personagem deve ter carisma 10                                      # features/steps/character_creation_pt_steps.py:190
+    And o personagem deve ter constituição 8                                  # features/steps/character_creation_pt_steps.py:198
+    And o personagem deve ter HP 24                                           # features/steps/character_creation_pt_steps.py:206
+    And o personagem deve ter HP máximo 24                                    # features/steps/character_creation_pt_steps.py:214
+    And o personagem deve ter 100 gold                                        # features/steps/character_creation_pt_steps.py:222
+    And o personagem deve ter as habilidades ["Attack", "Defend", "Fireball"] # features/steps/character_creation_pt_steps.py:230
+    And o personagem deve ter inventário vazio                                # features/steps/character_creation_pt_steps.py:242
 
-  Scenario: Dynamic pricing system               # features/shop_system.feature:11
-    Given player wants to buy items              # features/steps/shop_system_steps.py:229
-    When they check prices across cities         # features/steps/shop_system_steps.py:243
-    Then prices should vary by location          # features/steps/shop_system_steps.py:282
-    And supply should affect pricing             # features/steps/shop_system_steps.py:302
-    And player reputation should influence costs # features/steps/shop_system_steps.py:314
-    And bulk purchases should offer discounts    # features/steps/shop_system_steps.py:338
+  Scenario: Falhar ao criar personagem com nome inválido                 # features/01_character_creation.feature:51
+    Given eu informo o nome "" para o personagem                         # features/steps/character_creation_pt_steps.py:24
+    And eu seleciono a classe "guerreiro" para o personagem              # features/steps/character_creation_pt_steps.py:30
+    When eu tento criar o personagem                                     # features/steps/character_creation_pt_steps.py:105
+    Then a criação deve falhar com erro "Character name cannot be empty" # features/steps/character_creation_pt_steps.py:252
+      Assertion Failed: Expected error 'Character name cannot be empty' in 'Failed to create character: Failed to create character:  (guerreiro)'
 
-  Scenario: Shop economy simulation               # features/shop_system.feature:19
-    Given shop operates in game world             # features/steps/shop_system_steps.py:372
-    When player interacts with shop over time     # features/steps/shop_system_steps.py:386
-    Then shop should have limited gold reserves   # features/steps/shop_system_steps.py:476
-    And buying should deplete shop inventory      # features/steps/shop_system_steps.py:503
-    And selling should increase shop inventory    # features/steps/shop_system_steps.py:529
-    And shop should restock based on trade routes # features/steps/shop_system_steps.py:559
 
-  Scenario: Shop types and specializations          # features/shop_system.feature:27
-    Given player explores different cities          # features/steps/shop_system_steps.py:604
-    When they visit various shops                   # features/steps/shop_system_steps.py:634
-    Then they should find weapon specialists        # features/steps/shop_system_steps.py:675
-    And they should find armor merchants            # features/steps/shop_system_steps.py:688
-    And they should find magic item dealers         # features/steps/shop_system_steps.py:699
-    And they should find general traders            # features/steps/shop_system_steps.py:710
-      ASSERT FAILED: General shop should have practical items
+  Scenario: Falhar ao criar personagem com nome muito longo                                                  # features/01_character_creation.feature:57
+    Given eu informo o nome "NomeMuitoLongoQueExcedeOLimitePermitidoDeCinquentaCaracteres" para o personagem # features/steps/bdd_base_steps.py:84
+    And eu seleciono a classe "guerreiro" para o personagem                                                  # features/steps/character_creation_pt_steps.py:30
+    When eu tento criar o personagem                                                                         # features/steps/character_creation_pt_steps.py:105
+    Then a criação deve falhar com erro "Character name cannot exceed 50 characters"                         # features/steps/character_creation_pt_steps.py:252
+      Assertion Failed: Expected error 'Character name cannot exceed 50 characters' in 'Failed to create character: Failed to create character: NomeMuitoLongoQueExcedeOLimitePermitidoDeCinquentaCaracteres (guerreiro)'
 
-    And each shop type should have unique inventory # None
 
-  Scenario: Trading and bartering system       # features/shop_system.feature:36
-    Given player wants to sell items           # features/steps/shop_system_steps.py:748
-    When they interact with shopkeeper         # features/steps/shop_system_steps.py:778
-    Then they should receive fair market value # features/steps/shop_system_steps.py:835
-    And rare items should fetch higher prices  # features/steps/shop_system_steps.py:855
-    And shopkeeper gold should limit purchases # features/steps/shop_system_steps.py:881
-    And reputation should affect sell prices   # features/steps/shop_system_steps.py:901
+  Scenario: Falhar ao criar personagem com classe inválida                            # features/01_character_creation.feature:64
+    Given eu informo o nome "Test" para o personagem                                  # features/steps/bdd_base_steps.py:84
+    And eu seleciono a classe "classe_inexistente" para o personagem                  # features/steps/character_creation_pt_steps.py:30
+    When eu tento criar o personagem                                                  # features/steps/character_creation_pt_steps.py:105
+    Then a criação deve falhar com erro "Invalid character class: classe_inexistente" # features/steps/character_creation_pt_steps.py:252
+      Assertion Failed: Expected error 'Invalid character class: classe_inexistente' in 'Failed to create character: Failed to create character: Test (classe_inexistente)'
+
+
+  Scenario: Criar personagens de todas as 23 classes                       # features/01_character_creation.feature:71
+    Given eu tenho um mapeamento de classes e estatísticas esperadas       # features/steps/character_creation_pt_steps.py:264
+    When eu crio personagens para todas as classes disponíveis             # features/steps/character_creation_pt_steps.py:274
+      Traceback (most recent call last):
+        File "/home/jose/Disposable/code/rpgsim/venv/lib/python3.12/site-packages/behave/model.py", line 1329, in run
+          match.run(runner.context)
+        File "/home/jose/Disposable/code/rpgsim/venv/lib/python3.12/site-packages/behave/matchers.py", line 98, in run
+          self.func(context, *args, **kwargs)
+        File "features/steps/character_creation_pt_steps.py", line 280, in step_create_all_classes_pt
+          available_classes = game._get_available_classes()
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      AttributeError: 'GameSystem' object has no attribute '_get_available_classes'
+
+    Then cada personagem deve ter as estatísticas corretas para sua classe # None
+    And cada personagem deve ter as habilidades corretas para sua classe   # None
+    And cada personagem deve ter o HP correto para sua classe              # None
 
