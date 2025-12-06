@@ -1,10 +1,14 @@
 from typing import Dict, Optional, List
-from ..domain.spells import Spell, SpellBook
+from ..domain.spells import Spell, SpellBook, SpellSchool, SpellEffect
 from ..interfaces.repositories import SpellRepository
 
 class MemorySpellRepository(SpellRepository):
     def __init__(self):
-        self._spells: Dict[str, Spell] = {}
+        self._spells: Dict[str, Spell] = {
+            "fireball": Spell(id="fireball", name="fireball", school=SpellSchool.FIRE, mana_cost=20, description="A fiery explosion", damage=60),
+            "heal": Spell(id="heal", name="heal", school=SpellSchool.HEALING, mana_cost=15, description="Heals a friendly target", effect=SpellEffect(effect_type="heal", value=25)),
+            "poison_cloud": Spell(id="poison_cloud", name="poison_cloud", school=SpellSchool.POISON, mana_cost=25, description="Poisons a target", effect=SpellEffect(effect_type="poison", value=5)),
+        }
         self._spell_books: Dict[str, SpellBook] = {}
 
     def get_spell(self, spell_id: str) -> Optional[Spell]:

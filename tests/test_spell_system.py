@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch
-from facade import SpellSystem
-from domain.spells import Spell, SpellSchool, SpellEffect, SpellBook
+from core.systems.spells.facade import SpellSystem
+from core.systems.spells.domain.spells import Spell, SpellBook, SpellSchool
 from core.models import Character, CharacterStats, CharacterClass
 
 # Rebuild the Character model to resolve the forward reference to SpellBook
@@ -14,8 +14,9 @@ def spell_system():
 @pytest.fixture
 def character():
     stats = CharacterStats(strength=10, dexterity=10, intelligence=15, wisdom=12, charisma=8, constitution=14)
+    character_id = "test_char"
     return Character(
-        id="test_char",
+        id=character_id,
         name="Test Mage",
         class_type=CharacterClass.MAGE,
         level=5,
@@ -25,7 +26,7 @@ def character():
         max_hp=50,
         mana=100,
         max_mana=100,
-        spell_book=SpellBook(),
+        spell_book=SpellBook(character_id=character_id, known_spells=[]),
         gold=100
     )
 
@@ -50,7 +51,7 @@ def test_get_spell(spell_system):
     assert fireball.name == "fireball"
     assert fireball.school == SpellSchool.FIRE
 
-@patch('services.spell_casting_service.random.randint', return_value=1)
+@patch('core.systems.spells.services.spell_service.random.randint', return_value=1)
 def test_cast_spell_damage(mock_randint, spell_system, character, target_character):
     spell_system.learn_spell(character, "fireball")
     result = spell_system.cast_spell(character, target_character, "fireball")
@@ -58,7 +59,7 @@ def test_cast_spell_damage(mock_randint, spell_system, character, target_charact
     assert result["damage"] == 60
     assert target_character.hp == 0
 
-@patch('services.spell_casting_service.random.randint', return_value=1)
+@patch('core.systems.spells.services.spell_service.random.randint', return_value=1)
 def test_cast_spell_healing(mock_randint, spell_system, character, target_character):
     spell_system.learn_spell(character, "heal")
     result = spell_system.cast_spell(character, target_character, "heal")
@@ -66,12 +67,12 @@ def test_cast_spell_healing(mock_randint, spell_system, character, target_charac
     assert result["healing"] > 0
     assert target_character.hp > 10
 
-def test_cast_spell_insufficient_mana(spell_system, character):
+def test_cast_spell_insufficient_mana(spell_system, character, target_character):
     character.mana = 10
     with pytest.raises(ValueError, match="Insufficient mana."):
-        spell_system.cast_spell(character, None, "fireball")
+        spell_system.cast_spell(character, target_character, "fireball")
 
-@patch('services.spell_casting_service.random.randint', return_value=100)
+@patch('core.systems.spells.services.spell_service.random.randint', return_value=100)
 def test_cast_spell_miss(mock_randint, spell_system, character, target_character):
     spell_system.learn_spell(character, "fireball")
     result = spell_system.cast_spell(character, target_character, "fireball")
@@ -79,14 +80,14 @@ def test_cast_spell_miss(mock_randint, spell_system, character, target_character
     assert result["damage"] == 0
     assert target_character.hp == 10
 
-@patch('services.spell_casting_service.random.randint', return_value=1)
+@patch('core.systems.spells.services.spell_service.random.randint', return_value=1)
 def test_cast_spell_status_effect(mock_randint, spell_system, character, target_character):
     spell_system.learn_spell(character, "poison_cloud")
     result = spell_system.cast_spell(character, target_character, "poison_cloud")
     assert "poison" in result["status_effects_applied"]
     assert "poison" in target_character.status_effects
 
-@patch('services.spell_casting_service.random.randint', return_value=1)
+@patch('core.systems.spells.services.spell_service.random.randint', return_value=1)
 def test_spell_cooldown(mock_randint, spell_system, character, target_character):
     spell_system.learn_spell(character, "fireball")
     spell_system.cast_spell(character, target_character, "fireball")
@@ -96,4 +97,4 @@ def test_spell_cooldown(mock_randint, spell_system, character, target_character)
 def test_learn_spell_requirements_not_met(spell_system, character):
     character.level = 1
     spell_system.learn_spell(character, "fireball")
-    assert "fireball" not in character.spell_book.spells
+    assert "fireball" not in character.spell_book.known_spells
